@@ -1,0 +1,28 @@
+alerting:
+  rules:
+    - alert: HighGreetingLatency
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="api-gateway"}[5m])) > 30
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Greeting API is slow"
+        description: "95th percentile of greeting requests is over 30 seconds"
+
+    - alert: TeapotNotTeapot
+      expr: http_status_code{endpoint="/health", status!="418"} == 1
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Teapot service is not returning 418"
+        description: "The teapot health check is not compliant with RFC 2324"
+
+    - alert: LowGreetingConfidence
+      expr: ai_confidence < 80
+      for: 10m
+      labels:
+        severity: info
+      annotations:
+        summary: "AI greeting confidence is low"
+        description: "Gemini AI is uncertain about greeting choice"

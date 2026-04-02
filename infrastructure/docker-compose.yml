@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: ../services/api-gateway
+    ports:
+      - "8080:8080"
+  ai-decision-engine:
+    build: ../services/ai-decision-engine
+    ports:
+      - "8081:8081"
+  teapot-service:
+    build: ../services/teapot-service
+    ports:
+      - "8082:8082"
+  punctuation-service:
+    build: ../services/punctuation-service
+    ports:
+      - "8083:8083"
+  capitalization-service:
+    build: ../services/capitalization-service
+    ports:
+      - "8084:8084"
+  concatenation-service:
+    build: ../services/concatenation-service
+    ports:
+      - "8085:8085"
+  feature-flag-service:
+    build: ../services/feature-flag-service
+    ports:
+      - "8086:8086"
+  ab-testing-service:
+    build: ../services/ab-testing-service
+    ports:
+      - "8087:8087"
+  frontend:
+    build: ../services/frontend
+    ports:
+      - "3000:3000"

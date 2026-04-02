@@ -1,0 +1,49 @@
+{
+  "dashboard": {
+    "title": "HelloWorld Enterprise - Infrastructure Overview",
+    "tags": ["helloworld", "enterprise", "over-engineering"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "Greeting Requests per Minute",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"api-gateway\"}[5m])",
+            "legendFormat": "Requests/min"
+          }
+        ]
+      },
+      {
+        "title": "AI Token Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "ai_tokens_used_total",
+            "legendFormat": "Tokens used"
+          }
+        ]
+      },
+      {
+        "title": "Microservice Health Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "up{job=~\".*\"}",
+            "legendFormat": "{{job}}"
+          }
+        ]
+      },
+      {
+        "title": "Architecture Complexity Score",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "count(up{job=~\".*\"}) * 6",
+            "legendFormat": "Complexity Score"
+          }
+        ]
+      }
+    ]
+  }
+}
