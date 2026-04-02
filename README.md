@@ -1,11 +1,13 @@
-# HelloWorld Enterprise Edition™
-<p align="center">
-  <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/main/banner.svg" width="100%" />
-</p>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/98a3a5c97acfb3fff2b0e25e891f511e3dfb4040/banner.svg" alt="Hello World Enterprise Edition" width="100%"/>
 </p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/01d0a5b0d0456547e116afa8342466f86726a206/brand.svg"/>
+</p>
+
+
 
 
 ## The World's Most Over-Engineered Greeting
