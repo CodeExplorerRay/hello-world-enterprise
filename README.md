@@ -12,7 +12,7 @@
 
 ## The World's Most Over-Engineered Greeting
 
-**Tagline:** "Because saying 'Hello World' should require at least 47 microservices, an AI decision engine, and a teapot."
+>"Because saying 'Hello World' should require at least 47 microservices, an AI decision engine, and a teapot."
 
 Welcome to HelloWorld Enterprise Edition™ — the pinnacle of software over-engineering. This project demonstrates how to take the simplest possible task (displaying "Hello World") and turn it into a distributed system with 9 microservices, 6 programming languages, cloud infrastructure, CI/CD, monitoring, and 47 architecture decision records.
 
