@@ -1,0 +1,136 @@
+name: Greeting Audit
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Prepare runtime environment
+      shell: bash
+      run: |
+        if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+          printf 'GEMINI_API_KEY=%s\n' "${{ secrets.GEMINI_API_KEY }}" > .env
+          echo "SMOKE_REQUIRE_LIVE_GEMINI=true" >> "$GITHUB_ENV"
+        else
+          : > .env
+          echo "SMOKE_REQUIRE_LIVE_GEMINI=false" >> "$GITHUB_ENV"
+        fi
+        echo "GREETING_AUDIT_STATUS=failed" >> "$GITHUB_ENV"
+
+    - name: Rebuild and recreate changed services
+      run: |
+        docker compose -f infrastructure/docker-compose.yml build ai-decision-engine teapot-service api-gateway frontend
+        docker compose -f infrastructure/docker-compose.yml up -d --force-recreate ai-decision-engine teapot-service api-gateway frontend
+
+    - name: Start remaining local services
+      run: |
+        docker compose -f infrastructure/docker-compose.yml up -d capitalization-service concatenation-service punctuation-service feature-flag-service ab-testing-service
+
+    - name: Run greeting audit
+      run: |
+        echo "Testing greeting generation..."
+
+        for attempt in {1..20}; do
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/greet || true)
+          if [ "$STATUS" = "200" ]; then
+            break
+          fi
+          sleep 3
+        done
+
+        RESPONSE=$(curl -s http://localhost:8080/api/greet \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"recipient":"World","channel":"web","locale":"en-US","preferredGreeting":"auto","userId":"greeting-audit-bot"}')
+
+        echo "$RESPONSE" > greeting-response.json
+
+        node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('greeting-response.json','utf8')); if (!data.greeting || !data.metadata || !data.metadata.featureFlags || !data.metadata.experiment) { process.exit(1); }"
+        echo "GREETING_AUDIT_STATUS=passed" >> $GITHUB_ENV
+
+    - name: Run endpoint smoke test
+      env:
+        SMOKE_REQUIRE_LIVE_GEMINI: ${{ env.SMOKE_REQUIRE_LIVE_GEMINI }}
+      run: |
+        node scripts/smoke-test-endpoints.js
+
+    - name: Check punctuation variants
+      run: |
+        echo "Checking punctuation A/B testing..."
+        curl -s "http://localhost:8085/test/punctuation-style?userId=greeting-audit-bot" > punctuation-response.json
+        node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('punctuation-response.json','utf8')); if (!['A','B'].includes(data.variant) || !data.punctuation) { process.exit(1); }"
+
+    - name: Verify AI decision engine
+      run: |
+        echo "Verifying AI decision engine responses..."
+        curl -s http://localhost:8081/decide > ai-response.json
+        node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('ai-response.json','utf8')); if (!data.greeting) { process.exit(1); }"
+
+    - name: Check feature flags
+      run: |
+        echo "Auditing feature flags..."
+        curl -s "http://localhost:8084/flags/greeting-word?userId=greeting-audit-bot&channel=web&locale=en-US" > feature-flag-response.json
+        node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('feature-flag-response.json','utf8')); if (!data.flag || typeof data.enabled !== 'boolean') { process.exit(1); }"
+
+    - name: Generate audit report
+      run: |
+        echo "# Weekly Greeting Audit Report" > audit-report.md
+        echo "" >> audit-report.md
+        echo "## Date: $(date)" >> audit-report.md
+        echo "" >> audit-report.md
+        echo "## Results" >> audit-report.md
+        echo "- Greeting orchestration: passed" >> audit-report.md
+        echo "- Punctuation variants: working" >> audit-report.md
+        echo "- AI responses: available" >> audit-report.md
+        echo "- Feature flags: functional" >> audit-report.md
+        echo "" >> audit-report.md
+        echo "## Recommendations" >> audit-report.md
+        echo "- Keep the POST /api/greet contract stable" >> audit-report.md
+        echo "- Watch for service-port drift in compose and Cloud Run" >> audit-report.md
+
+    - name: Upload audit report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        if-no-files-found: warn
+        name: greeting-audit-report
+        path: audit-report.md
+
+    - name: Create issue on failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: 'Greeting Audit Failed',
+            body: 'The weekly greeting audit has failed. Please check the audit report artifact for details.',
+            labels: ['audit-failure']
+          })
+
+    - name: Success notification
+      if: env.GREETING_AUDIT_STATUS == 'passed'
+      run: |
+        echo "All greeting audits passed. The gateway orchestration path is responding."
+
+    - name: Stop local services
+      if: always()
+      run: |
+        docker compose -f infrastructure/docker-compose.yml down --volumes

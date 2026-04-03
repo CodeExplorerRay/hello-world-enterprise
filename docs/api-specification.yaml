@@ -1,87 +1,293 @@
 openapi: 3.0.3
 info:
   title: HelloWorld Enterprise API
-  description: The world's most over-engineered greeting service API
-  version: 1.0.0
+  description: >
+    The world's most over-engineered greeting service API. This contract describes the
+    absurdly elaborate orchestration required to generate a two-word greeting with optional
+    AI reasoning, feature flags, experimentation metadata, teapot verification, and cost accounting.
+  version: 2.1.0
   contact:
     name: HelloWorld Enterprise Support
     email: support@helloworld-enterprise.com
+    url: https://github.com/your-org/hello-world-enterprise
   license:
     name: "Don't Use This In Production License"
     url: https://choosealicense.com/licenses/unlicense/
+  x-enterprise-notes:
+    architecturePrinciple: "If string concatenation can be a service, it should be."
+    adrsConsulted: 47
+    lastAuditOutcome: "passing with healthy skepticism"
 
 servers:
   - url: http://localhost:8080
-    description: Local development server
+    description: Local API Gateway
   - url: https://api.helloworld-enterprise.com
-    description: Production server
+    description: Production API Gateway
+
+tags:
+  - name: Greetings
+    description: Greeting generation and retrieval operations
+  - name: Metadata
+    description: Operational, experimental, and financial metadata
+  - name: Enterprise
+    description: Over-engineered enterprise-grade behaviors
 
 paths:
   /api/greet:
     get:
-      summary: Get the enterprise greeting
+      tags: [Greetings, Metadata]
+      summary: Retrieve a greeting using query-string request context
       description: |
-        Retrieves the ultimate "Hello World" greeting through our 9-microservice architecture.
-
-        This endpoint orchestrates:
-        - AI-powered greeting decision making
-        - Feature flag evaluation
-        - Multi-language string processing
-        - A/B testing for punctuation
-        - Health checks via HTCPCP protocol
-      operationId: getGreeting
+        Convenience GET endpoint for browser health checks and quick smoke tests.
+        The gateway accepts request context from query parameters, consults feature flags,
+        assigns an experiment bucket, optionally asks Gemini to make a greeting decision,
+        verifies teapot compliance, and assembles the final greeting.
+      operationId: getGreetingViaQuery
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Recipient'
+        - $ref: '#/components/parameters/Channel'
+        - $ref: '#/components/parameters/Locale'
+        - $ref: '#/components/parameters/PreferredGreeting'
       responses:
         '200':
-          description: Successful greeting retrieval
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  greeting:
-                    type: string
-                    example: "Hello World!"
-                    description: The final greeting text
-                  metadata:
-                    type: object
-                    properties:
-                      processingTimeMs:
-                        type: integer
-                        example: 15000
-                        description: Total processing time including loading animation
-                      microservicesInvoked:
-                        type: integer
-                        example: 7
-                        description: Number of microservices called
-                      aiTokensUsed:
-                        type: integer
-                        example: 45
-                        description: AI tokens consumed for greeting decision
-                      teapotStatus:
-                        type: integer
-                        example: 418
-                        description: HTCPCP health check status
-                      architectureDecisionRecordsConsulted:
-                        type: integer
-                        example: 47
-                        description: Number of ADR documents referenced
-                      wasItWorthIt:
-                        type: boolean
-                        example: false
-                        description: Philosophical assessment of the architecture
+          $ref: '#/components/responses/GreetingResponse'
         '429':
-          description: Rate limit exceeded
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/GatewayFallback'
+    post:
+      tags: [Greetings, Metadata, Enterprise]
+      summary: Generate the enterprise greeting
+      description: |
+        Primary endpoint for generating a greeting through the full orchestration flow.
+
+        Processing stages:
+        - Request context normalization
+        - Greeting feature-flag lookup
+        - AI enablement feature-flag lookup
+        - Sticky A/B experiment assignment for punctuation style
+        - Optional Gemini greeting decision
+        - Capitalization service invocation
+        - Concatenation service invocation
+        - Punctuation service invocation
+        - Teapot compliance check
+        - Cost estimate calculation
+        - Seasonal April Fools override, if applicable
+      operationId: createGreeting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GreetingRequest'
+            examples:
+              standard:
+                summary: Standard web greeting request
+                value:
+                  userId: session-123
+                  recipient: World
+                  locale: en-US
+                  channel: web
+                  preferredGreeting: auto
+              mobile:
+                summary: Mobile user with explicit greeting preference
+                value:
+                  userId: mobile-456
+                  recipient: Alisha
+                  locale: en-US
+                  channel: mobile
+                  preferredGreeting: hey
+              aprilFools:
+                summary: Seasonal request demonstrating easter egg behavior
+                value:
+                  userId: prank-007
+                  recipient: Team
+                  locale: en-US
+                  channel: web
+                  preferredGreeting: auto
+      responses:
+        '200':
+          $ref: '#/components/responses/GreetingResponse'
+        '400':
+          description: Malformed request payload
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Whoa there! Our Hello World infrastructure can only handle 1 greeting per minute."
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                malformed:
+                  value:
+                    error: invalid-request
+                    message: recipient must be a non-empty string
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/GatewayFallback'
 
 components:
+  parameters:
+    UserId:
+      in: query
+      name: userId
+      required: false
+      schema:
+        type: string
+      description: Sticky session or user identifier used for A/B allocation
+      example: session-123
+    Recipient:
+      in: query
+      name: recipient
+      required: false
+      schema:
+        type: string
+      description: Final recipient name appended to the greeting
+      example: World
+    Channel:
+      in: query
+      name: channel
+      required: false
+      schema:
+        type: string
+        enum: [web, mobile, email]
+      description: Channel used for feature-flag targeting
+      example: web
+    Locale:
+      in: query
+      name: locale
+      required: false
+      schema:
+        type: string
+      description: Locale used for greeting selection and regional nuance
+      example: en-US
+    PreferredGreeting:
+      in: query
+      name: preferredGreeting
+      required: false
+      schema:
+        type: string
+        enum: [auto, hello, hi, hey, greetings]
+      description: Explicit greeting override. Use `auto` to delegate to flags and AI.
+      example: auto
+
+  responses:
+    GreetingResponse:
+      description: Successful greeting retrieval
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GreetingResponse'
+          examples:
+            aiDriven:
+              summary: AI-assisted greeting
+              value:
+                greeting: Greetings World!
+                metadata:
+                  aiTokensUsed: 519
+                  architectureDecisionRecordsConsulted: 47
+                  costEstimate:
+                    aiCostUsd: 0.0093
+                    infraCostUsd: 0.0200
+                    totalCostUsd: 0.0293
+                    whimsicalExplanation: Approximately $0.0293 to render one greeting nobody asked for.
+                  easterEgg:
+                    active: false
+                    note: No seasonal easter eggs are active today.
+                  experiment:
+                    experiment: punctuation-style
+                    variant: A
+                    punctuation: "!"
+                    style: excited
+                    sampleSize: 128
+                    requiredSampleSize: 10000
+                    statisticalSignificance: early-signal-only
+                  featureFlags:
+                    greetingWord:
+                      flag: greeting-word
+                      enabled: true
+                      value: Greetings
+                    aiGreetingEnabled:
+                      flag: ai-greeting-enabled
+                      enabled: true
+                      value: true
+                  greetingDecision:
+                    source: ai-decision-engine
+                    word: Greetings
+                    reason: AI greeting recommendation accepted.
+                  microservicesInvoked: 8
+                  processingTimeMs: 1131
+                  teapotStatus: 418
+                  wasItWorthIt: false
+            fallback:
+              summary: Gateway emergency fallback
+              value:
+                greeting: Hello World!
+                metadata:
+                  aiTokensUsed: 0
+                  architectureDecisionRecordsConsulted: 47
+                  costEstimate:
+                    aiCostUsd: 0
+                    infraCostUsd: 0.0142
+                    totalCostUsd: 0.0142
+                    whimsicalExplanation: Approximately $0.0142 to render one greeting nobody asked for.
+                  easterEgg:
+                    active: false
+                    note: Emergency fallback mode bypassed seasonal overrides.
+                  greetingDecision:
+                    source: api-gateway
+                    word: hello
+                    reason: Gateway emergency fallback response.
+                  microservicesInvoked: 0
+                  orchestrationError: downstream timeout
+                  teapotStatus: 418
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                error: rate-limit-exceeded
+                message: Whoa there! Our Hello World infrastructure can only handle 100 greetings per minute.
+    GatewayFallback:
+      description: Gateway encountered an error and returned a controlled fallback
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GreetingResponse'
+
   schemas:
+    GreetingRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          description: Stable identifier for feature flags and experiment bucketing
+          example: session-123
+        recipient:
+          type: string
+          description: Recipient displayed in the final greeting
+          example: World
+        locale:
+          type: string
+          description: Locale hint for regional greeting preferences
+          example: en-US
+        channel:
+          type: string
+          enum: [web, mobile, email]
+          description: User channel used for targeting
+          example: web
+        preferredGreeting:
+          type: string
+          enum: [auto, hello, hi, hey, greetings]
+          description: Explicit greeting preference or auto-selection
+          example: auto
+      required:
+        - recipient
+
     GreetingResponse:
       type: object
       required:
@@ -90,29 +296,163 @@ components:
       properties:
         greeting:
           type: string
-          description: The greeting text
+          description: Final greeting text produced by the API gateway
+          example: Hello World!
         metadata:
-          type: object
-          description: Processing metadata
-          properties:
-            processingTimeMs:
-              type: integer
-              description: Processing time in milliseconds
-            microservicesInvoked:
-              type: integer
-              description: Number of microservices used
-            aiTokensUsed:
-              type: integer
-              description: AI API tokens consumed
-            teapotStatus:
-              type: integer
-              description: Health check status code
-            architectureDecisionRecordsConsulted:
-              type: integer
-              description: ADRs referenced
-            wasItWorthIt:
-              type: boolean
-              description: Value assessment
+          $ref: '#/components/schemas/GreetingMetadata'
+
+    GreetingMetadata:
+      type: object
+      properties:
+        aiTokensUsed:
+          type: integer
+          description: Total Gemini tokens consumed by the request
+        architectureDecisionRecordsConsulted:
+          type: integer
+          description: Number of ADRs allegedly consulted
+        costEstimate:
+          $ref: '#/components/schemas/CostEstimate'
+        easterEgg:
+          $ref: '#/components/schemas/EasterEggStatus'
+        experiment:
+          $ref: '#/components/schemas/ExperimentMetadata'
+        featureFlags:
+          $ref: '#/components/schemas/FeatureFlagEnvelope'
+        greetingDecision:
+          $ref: '#/components/schemas/GreetingDecision'
+        microservicesInvoked:
+          type: integer
+        orchestrationError:
+          type: string
+          description: Present only during controlled gateway fallback scenarios
+        processingTimeMs:
+          type: integer
+        requestContext:
+          $ref: '#/components/schemas/RequestContext'
+        servicesInvoked:
+          type: array
+          items:
+            type: string
+        teapotStatus:
+          type: integer
+          example: 418
+        wasItWorthIt:
+          type: boolean
+          example: false
+
+    CostEstimate:
+      type: object
+      properties:
+        aiCostUsd:
+          type: number
+          format: float
+        infraCostUsd:
+          type: number
+          format: float
+        totalCostUsd:
+          type: number
+          format: float
+        whimsicalExplanation:
+          type: string
+
+    EasterEggStatus:
+      type: object
+      properties:
+        active:
+          type: boolean
+        note:
+          type: string
+
+    ExperimentMetadata:
+      type: object
+      properties:
+        experiment:
+          type: string
+        variant:
+          type: string
+        punctuation:
+          type: string
+        style:
+          type: string
+        sampleSize:
+          type: integer
+        requiredSampleSize:
+          type: integer
+        statisticalSignificance:
+          type: string
+        pValue:
+          type: number
+          format: float
+        recommendation:
+          type: string
+        fallbackReason:
+          type: string
+
+    FeatureFlagEnvelope:
+      type: object
+      properties:
+        greetingWord:
+          $ref: '#/components/schemas/FeatureFlag'
+        aiGreetingEnabled:
+          $ref: '#/components/schemas/FeatureFlag'
+
+    FeatureFlag:
+      type: object
+      properties:
+        flag:
+          type: string
+        enabled:
+          type: boolean
+        value:
+          oneOf:
+            - type: string
+            - type: boolean
+            - type: 'null'
+        note:
+          type: string
+        rolloutPercentage:
+          type: integer
+        approvedBy:
+          type: string
+        changeRequestId:
+          type: string
+        lastModified:
+          type: string
+          format: date-time
+
+    GreetingDecision:
+      type: object
+      properties:
+        source:
+          type: string
+          example: ai-decision-engine
+        word:
+          type: string
+          example: Hello
+        reason:
+          type: string
+
+    RequestContext:
+      type: object
+      properties:
+        channel:
+          type: string
+        locale:
+          type: string
+        preferredGreeting:
+          type: string
+        recipient:
+          type: string
+        userId:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
 
   securitySchemes:
     ApiKeyAuth:
@@ -123,12 +463,6 @@ components:
 
 security:
   - ApiKeyAuth: []
-
-tags:
-  - name: Greetings
-    description: Greeting-related operations
-  - name: Enterprise
-    description: Over-engineered enterprise features
 
 externalDocs:
   description: Find out more about HelloWorld Enterprise

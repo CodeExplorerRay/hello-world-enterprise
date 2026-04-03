@@ -1,0 +1,8 @@
+{
+  "name": "hello-world-enterprise",
+  "private": true,
+  "scripts": {
+    "smoke:endpoints": "node scripts/smoke-test-endpoints.js",
+    "smoke:stack": "node scripts/rebuild-and-smoke-test.js"
+  }
+}

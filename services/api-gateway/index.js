@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const { buildEmergencyGreetingResponse, orchestrateGreeting } = require('./greeting-orchestrator');
 
 // Enable CORS for all routes
 app.use(cors());
+app.use(express.json());
 
 // Rate limiter: 100 requests per minute (relaxed for testing)
 const rateLimit = require('express-rate-limit');
@@ -17,25 +19,20 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-app.get('/api/greet', async (req, res) => {
-  const startTime = Date.now();
-  
-  // Mock all microservice calls for testing
-  const greeting = "Hello World!";
-  
-  const totalTime = Date.now() - startTime;
-  
-  res.json({
-    greeting: greeting,
-    metadata: {
-      processingTimeMs: totalTime,
-      microservicesInvoked: 7,
-      aiTokensUsed: 0,
-      teapotStatus: 418,
-      architectureDecisionRecordsConsulted: 47,
-      wasItWorthIt: false
-    }
-  });
-});
+async function handleGreet(req, res) {
+  const payload = req.method === 'GET' ? req.query : req.body;
 
-app.listen(8080);
+  try {
+    const response = await orchestrateGreeting(payload, process.env);
+    res.json(response);
+  } catch (error) {
+    console.error('Greeting orchestration failed:', error);
+    res.json(buildEmergencyGreetingResponse(payload, error));
+  }
+}
+
+app.get('/api/greet', handleGreet);
+app.post('/api/greet', handleGreet);
+
+const port = Number(process.env.PORT || 8080);
+app.listen(port);

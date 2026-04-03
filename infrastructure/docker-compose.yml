@@ -1,12 +1,28 @@
-version: '3.8'
-
 services:
   api-gateway:
     build: ../services/api-gateway
+    depends_on:
+      - ai-decision-engine
+      - teapot-service
+      - punctuation-service
+      - capitalization-service
+      - concatenation-service
+      - feature-flag-service
+      - ab-testing-service
+    environment:
+      AI_DECISION_ENGINE_URL: http://ai-decision-engine:8081
+      TEAPOT_SERVICE_URL: http://teapot-service:8082
+      PUNCTUATION_SERVICE_URL: http://punctuation-service:8083
+      FEATURE_FLAG_SERVICE_URL: http://feature-flag-service:8084
+      AB_TESTING_SERVICE_URL: http://ab-testing-service:8085
+      CONCATENATION_SERVICE_URL: http://concatenation-service:8086
+      CAPITALIZATION_SERVICE_URL: http://capitalization-service:8087
     ports:
       - "8080:8080"
   ai-decision-engine:
     build: ../services/ai-decision-engine
+    env_file:
+      - ../.env
     ports:
       - "8081:8081"
   teapot-service:
@@ -19,21 +35,32 @@ services:
       - "8083:8083"
   capitalization-service:
     build: ../services/capitalization-service
+    environment:
+      SERVER_PORT: 8087
     ports:
-      - "8084:8084"
+      - "8087:8087"
   concatenation-service:
     build: ../services/concatenation-service
+    environment:
+      ASPNETCORE_URLS: http://+:8086
     ports:
-      - "8085:8085"
+      - "8086:8086"
   feature-flag-service:
     build: ../services/feature-flag-service
     ports:
-      - "8086:8086"
+      - "8084:8084"
   ab-testing-service:
     build: ../services/ab-testing-service
     ports:
-      - "8087:8087"
+      - "8085:8085"
   frontend:
-    build: ../services/frontend
+    build:
+      context: ../services/frontend
+      args:
+        API_GATEWAY_ORIGIN: http://api-gateway:8080
+    depends_on:
+      - api-gateway
+    environment:
+      API_GATEWAY_ORIGIN: http://api-gateway:8080
     ports:
       - "3000:3000"

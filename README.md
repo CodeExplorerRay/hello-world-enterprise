@@ -7,6 +7,25 @@
   <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/01d0a5b0d0456547e116afa8342466f86726a206/brand.svg"/>
 </p>
 
+<p align="center">
+  <img alt="build" src="https://img.shields.io/badge/build-passing-brightgreen"/>
+  <img alt="deploy" src="https://img.shields.io/badge/deploy-cloud%20run-blue"/>
+  <img alt="greeting audit" src="https://img.shields.io/badge/greeting--audit-weekly-success"/>
+  <img alt="teapot status" src="https://img.shields.io/badge/teapot-418-critical"/>
+  <img alt="ai model" src="https://img.shields.io/badge/ai-gemini--flash--lite--latest-orange"/>
+  <img alt="frontend" src="https://img.shields.io/badge/frontend-next.js-black"/>
+  <img alt="gateway" src="https://img.shields.io/badge/gateway-express-lightgrey"/>
+  <img alt="rust" src="https://img.shields.io/badge/punctuation-rust-brown"/>
+  <img alt="java" src="https://img.shields.io/badge/capitalization-spring-success"/>
+  <img alt="dotnet" src="https://img.shields.io/badge/concatenation-.NET-512bd4"/>
+  <img alt="python" src="https://img.shields.io/badge/ab--testing-flask-red"/>
+  <img alt="feature flags" src="https://img.shields.io/badge/feature--flags-governed-blueviolet"/>
+  <img alt="sla" src="https://img.shields.io/badge/SLA-99.9%25-informational"/>
+  <img alt="runbook" src="https://img.shields.io/badge/on--call-3AM%20ready-yellow"/>
+  <img alt="monitoring" src="https://img.shields.io/badge/grafana-dashboard%20defined-ff69b4"/>
+  <img alt="cost per greeting" src="https://img.shields.io/badge/cost%20per%20greeting-needlessly%20high-important"/>
+</p>
+
 
 
 
@@ -30,6 +49,16 @@ In the world of enterprise software, complexity is a virtue. Simplicity is for a
 - Docker containers
 - Kubernetes-ready deployments
 - And much more!
+
+### Demo Highlights
+
+- A live request form that sends user context through the API gateway
+- Cost-per-greeting accounting in the frontend
+- An April 1st easter egg that overrides the greeting with `APRIL FOOLS`
+- A richer OpenAPI contract in [docs/api-specification.yaml](docs/api-specification.yaml)
+- A Grafana dashboard asset in [monitoring/dashboard.json](monitoring/dashboard.json)
+- An operations runbook in [docs/runbook.md](docs/runbook.md)
+- A changelog chronicling greeting-related drama in [CHANGELOG.md](CHANGELOG.md)
 
 ### Architecture Overview
 
@@ -98,7 +127,7 @@ In the world of enterprise software, complexity is a virtue. Simplicity is for a
 - Node.js 18+
 - Go 1.21+
 - Rust 1.70+
-- Java 17+
+- Java 25+
 - .NET 7+
 - Python 3.11+
 - Docker
@@ -108,8 +137,23 @@ In the world of enterprise software, complexity is a virtue. Simplicity is for a
 #### Local Development
 
 1. Clone this repo
-2. Run `docker-compose up` in the infrastructure folder
-3. Open http://localhost:3000
+2. Start Docker Desktop and wait until Docker is running
+3. Copy `.env.example` to `.env`
+4. Add your Gemini API key to `.env`
+5. Run `docker compose -f infrastructure/docker-compose.yml up --build`
+6. Open http://localhost:3000
+
+#### AI API Key Setup
+
+The AI Decision Engine reads `GEMINI_API_KEY` from the repo-root `.env` file during local Docker Compose runs.
+
+1. Copy `.env.example` to `.env`
+2. Set:
+   `GEMINI_API_KEY=your_real_key_here`
+3. Restart the stack with:
+   `docker compose -f infrastructure/docker-compose.yml up --build`
+
+If `GEMINI_API_KEY` is missing, the AI service falls back to mock responses automatically.
 
 #### Production Deployment
 
@@ -124,7 +168,7 @@ Routes requests to microservices with enterprise-grade rate limiting (1 request/
 
 #### AI Decision Engine (Node.js + Gemini)
 Uses Google's Gemini AI to decide between "Hello", "Hi", "Hey", etc., considering moon phases and vibes. 
-**Real integration**: Set `GEMINI_API_KEY` environment variable for actual Gemini 2.0 Flash API calls.
+**Real integration**: Set `GEMINI_API_KEY` environment variable for actual Gemini 2.5 Flash-Lite API calls.
 **Demo mode**: Falls back to mock responses when no API key is provided (perfect for demos and testing).
 Can also be demonstrated via Google AI Studio for the challenge submission.
 
@@ -154,7 +198,7 @@ Displays the greeting with a loading animation showing all services.
 | Component | Technology | Justification |
 |-----------|------------|---------------|
 | API Gateway | Node.js/Express | Industry standard for routing |
-| AI Engine | Gemini 2.0 Flash | Critical greeting decisions (with mock fallback) |
+| AI Engine | Gemini 2.5 Flash-Lite | Critical greeting decisions (with mock fallback) |
 | Teapot | Go | Fast refusal to brew coffee |
 | Punctuation | Rust | Memory safety for one character |
 | Capitalization | Java/Spring | Enterprise capitalization |
@@ -167,6 +211,14 @@ Displays the greeting with a loading animation showing all services.
 | Infra | Terraform | IaC for greetings |
 | CI/CD | Cloud Build | Continuous greeting deployment |
 | Monitoring | Cloud Monitoring | 24/7 observability |
+
+### Extra Polish
+
+- **Swagger/OpenAPI Documentation**: [docs/api-specification.yaml](docs/api-specification.yaml) now documents the greeting contract, nested metadata, fallback behavior, and cost model in painful detail.
+- **Grafana Dashboard**: [monitoring/dashboard.json](monitoring/dashboard.json) includes panels for latency, AI confidence, teapot 418 counts, cost per greeting, and variant distribution.
+- **SLA Document**: [SLA.md](SLA.md) formalizes our deeply unserious uptime commitment.
+- **On-Call Runbook**: [docs/runbook.md](docs/runbook.md) explains what to do when "Hello World" fails at 3 AM.
+- **CHANGELOG**: [CHANGELOG.md](CHANGELOG.md) records the historical consequences of greeting drift.
 
 ### Contributing
 

@@ -1,0 +1,148 @@
+steps:
+  # Build API Gateway
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/api-gateway:$COMMIT_SHA'
+      - './services/api-gateway'
+    id: 'build-api-gateway'
+
+  # Build AI Decision Engine
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ai-decision-engine:$COMMIT_SHA'
+      - './services/ai-decision-engine'
+    id: 'build-ai-decision-engine'
+
+  # Build Teapot Service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/teapot-service:$COMMIT_SHA'
+      - './services/teapot-service'
+    id: 'build-teapot-service'
+
+  # Build Punctuation Service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/punctuation-service:$COMMIT_SHA'
+      - './services/punctuation-service'
+    id: 'build-punctuation-service'
+
+  # Build Capitalization Service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/capitalization-service:$COMMIT_SHA'
+      - './services/capitalization-service'
+    id: 'build-capitalization-service'
+
+  # Build Concatenation Service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/concatenation-service:$COMMIT_SHA'
+      - './services/concatenation-service'
+    id: 'build-concatenation-service'
+
+  # Build Feature Flag Service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/feature-flag-service:$COMMIT_SHA'
+      - './services/feature-flag-service'
+    id: 'build-feature-flag-service'
+
+  # Build A/B Testing Service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ab-testing-service:$COMMIT_SHA'
+      - './services/ab-testing-service'
+    id: 'build-ab-testing-service'
+
+  # Build Frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/frontend:$COMMIT_SHA'
+      - './services/frontend'
+    id: 'build-frontend'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'api-gateway'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/api-gateway:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+    id: 'deploy-api-gateway'
+
+  # Deploy other services (simplified for demo)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ai-decision-engine'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/ai-decision-engine:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--no-allow-unauthenticated'
+      - '--port'
+      - '8081'
+    id: 'deploy-ai-decision-engine'
+
+  # Continue with other services...
+
+  # Run tests
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['test']
+    dir: 'services/api-gateway'
+    id: 'test-api-gateway'
+
+  # Update traffic
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'services'
+      - 'update-traffic'
+      - 'api-gateway'
+      - '--to-revisions=LATEST=100'
+      - '--region'
+      - 'us-central1'
+    id: 'update-traffic'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+timeout: '3600s'
+
+tags:
+  - 'hello-world-enterprise'
+  - 'ci-cd'
