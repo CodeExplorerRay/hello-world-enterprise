@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/98a3a5c97acfb3fff2b0e25e891f511e3dfb4040/banner.svg" alt="Hello World Enterprise Edition" width="100%"/>
+  <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/e44149d2b130e29e892d104519f98d9ca8c8a0fb/banner.svg" alt="Hello World Enterprise Edition" width="100%"/>
 </p>
 
 <p align="center">
@@ -237,7 +237,3 @@ Estimated cloud cost: $15/month for "Hello World".
 Was it worth it? No.
 
 But did we have fun? Yes.
-
-ll 9 services working
-Architecture diagram is inherently funny
-Great screenshot/GIF potential
