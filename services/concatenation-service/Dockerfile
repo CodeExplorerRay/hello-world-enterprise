@@ -16,6 +16,7 @@ WORKDIR /app
 
 COPY --from=build /app/out .
 
+ENV ASPNETCORE_URLS=http://+:8086
 EXPOSE 8086
 
 ENTRYPOINT ["dotnet", "ConcatenationService.dll"]

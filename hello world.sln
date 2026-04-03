@@ -1,0 +1,35 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "hello-world-enterprise", "hello-world-enterprise", "{7A26A12F-BDCC-9D52-CB38-81AAC3C71DCC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{CB60C270-5E5C-1194-255D-29C19A15ED5F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "concatenation-service", "concatenation-service", "{B3887A59-4B5A-BD38-1850-C0D885DAD844}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConcatenationService", "services\concatenation-service\ConcatenationService.csproj", "{32C80DB2-5630-42FC-BBC3-D21287FCF136}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{32C80DB2-5630-42FC-BBC3-D21287FCF136}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32C80DB2-5630-42FC-BBC3-D21287FCF136}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32C80DB2-5630-42FC-BBC3-D21287FCF136}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32C80DB2-5630-42FC-BBC3-D21287FCF136}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CB60C270-5E5C-1194-255D-29C19A15ED5F} = {7A26A12F-BDCC-9D52-CB38-81AAC3C71DCC}
+		{B3887A59-4B5A-BD38-1850-C0D885DAD844} = {CB60C270-5E5C-1194-255D-29C19A15ED5F}
+		{32C80DB2-5630-42FC-BBC3-D21287FCF136} = {B3887A59-4B5A-BD38-1850-C0D885DAD844}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9DF49843-2BF3-47EA-AC0B-B07FB8CE2B24}
+	EndGlobalSection
+EndGlobal

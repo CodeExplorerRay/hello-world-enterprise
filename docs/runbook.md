@@ -120,6 +120,17 @@ This runbook provides operational procedures for maintaining the HelloWorld Ente
 - Document incident
 - Schedule post-mortem
 
+### 3 AM Survival Checklist
+
+When "Hello World" goes down at 3 AM:
+
+1. Confirm the greeting is actually wrong and not merely stylistically controversial.
+2. Check the API gateway response payload for `orchestrationError`, `featureFlags`, `experiment`, and `aiTokensUsed`.
+3. Verify whether Gemini is unavailable, quota limited, or returning malformed output.
+4. Confirm the teapot still returns `418`, because if that breaks too the night is cursed.
+5. Decide whether to roll back to the fallback greeting path or fix the live service.
+6. Write the incident report before coffee wears off.
+
 ### Common Issues & Solutions
 
 #### Issue: AI Service Returns Errors

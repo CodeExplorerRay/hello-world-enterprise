@@ -1,0 +1,41 @@
+name: Deploy Frontend to Netlify
+
+on:
+  push:
+    branches: [ master ]
+    paths: [ 'services/frontend/**' ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: services/frontend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd services/frontend
+        npm ci
+
+    - name: Build frontend
+      run: |
+        cd services/frontend
+        npm run build
+
+    - name: Deploy to Netlify
+      uses: nwtgck/actions-netlify@v2.0.0
+      with:
+        publish-dir: services/frontend/out
+        production-deploy: true
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

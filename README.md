@@ -12,7 +12,7 @@
   <img alt="deploy" src="https://img.shields.io/badge/deploy-cloud%20run-blue"/>
   <img alt="greeting audit" src="https://img.shields.io/badge/greeting--audit-weekly-success"/>
   <img alt="teapot status" src="https://img.shields.io/badge/teapot-418-critical"/>
-  <img alt="ai model" src="https://img.shields.io/badge/ai-gemini--2.5--flash--lite-orange"/>
+  <img alt="ai model" src="https://img.shields.io/badge/ai-gemini--flash--lite--latest-orange"/>
   <img alt="frontend" src="https://img.shields.io/badge/frontend-next.js-black"/>
   <img alt="gateway" src="https://img.shields.io/badge/gateway-express-lightgrey"/>
   <img alt="rust" src="https://img.shields.io/badge/punctuation-rust-brown"/>
@@ -127,7 +127,7 @@ In the world of enterprise software, complexity is a virtue. Simplicity is for a
 - Node.js 18+
 - Go 1.21+
 - Rust 1.70+
-- Java 17+
+- Java 25+
 - .NET 7+
 - Python 3.11+
 - Docker

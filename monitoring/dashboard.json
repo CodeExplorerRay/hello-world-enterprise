@@ -1,49 +1,158 @@
 {
-  "dashboard": {
-    "title": "HelloWorld Enterprise - Infrastructure Overview",
-    "tags": ["helloworld", "enterprise", "over-engineering"],
-    "timezone": "browser",
-    "panels": [
+  "annotations": {
+    "list": [
       {
-        "title": "Greeting Requests per Minute",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(http_requests_total{job=\"api-gateway\"}[5m])",
-            "legendFormat": "Requests/min"
-          }
-        ]
-      },
-      {
-        "title": "AI Token Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "ai_tokens_used_total",
-            "legendFormat": "Tokens used"
-          }
-        ]
-      },
-      {
-        "title": "Microservice Health Status",
-        "type": "table",
-        "targets": [
-          {
-            "expr": "up{job=~\".*\"}",
-            "legendFormat": "{{job}}"
-          }
-        ]
-      },
-      {
-        "title": "Architecture Complexity Score",
-        "type": "singlestat",
-        "targets": [
-          {
-            "expr": "count(up{job=~\".*\"}) * 6",
-            "legendFormat": "Complexity Score"
-          }
-        ]
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
       }
     ]
-  }
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"api-gateway\"}[5m])) by (le)) * 1000",
+          "legendFormat": "p95 greeting latency",
+          "refId": "A"
+        }
+      ],
+      "title": "Greeting Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "avg(ai_confidence_score)",
+          "legendFormat": "AI confidence",
+          "refId": "A"
+        }
+      ],
+      "title": "AI Confidence Score",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "id": 3,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"api-gateway\"}[5m]))",
+          "legendFormat": "requests/sec",
+          "refId": "A"
+        }
+      ],
+      "title": "Greeting Throughput",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "id": 4,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [
+        {
+          "expr": "sum(increase(teapot_status_total{status_code=\"418\"}[1h]))",
+          "legendFormat": "teapot 418s",
+          "refId": "A"
+        }
+      ],
+      "title": "Teapot 418 Count",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "id": 5,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [
+        {
+          "expr": "avg(greeting_cost_total_usd)",
+          "legendFormat": "cost per greeting",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost Per Greeting",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
+      "id": 6,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": false, "displayName": "Value" }]
+      },
+      "targets": [
+        {
+          "expr": "up{job=~\"api-gateway|ai-decision-engine|teapot-service|punctuation-service|capitalization-service|concatenation-service|feature-flag-service|ab-testing-service|frontend\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Microservice Health Status",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": { "Metric": 0, "Value": 1 },
+            "renameByName": { "Metric": "Service", "Value": "Up" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
+      "id": 7,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "sum by (variant) (increase(ab_test_assignment_total{experiment=\"punctuation-style\"}[1h]))",
+          "legendFormat": "{{variant}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Punctuation Variant Distribution",
+      "type": "piechart"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["helloworld", "enterprise", "over-engineering", "grafana"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "HelloWorld Enterprise - Infrastructure Overview",
+  "version": 2,
+  "weekStart": ""
 }

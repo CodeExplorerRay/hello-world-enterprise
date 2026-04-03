@@ -25,7 +25,7 @@ Congratulations on joining the team! This 12-page guide will help you get starte
 - Node.js 18+
 - Go 1.21+
 - Rust 1.70+
-- Java 17+ with Maven
+- Java 25+ with Maven
 - .NET 7+
 - Python 3.11+
 - Docker Desktop
