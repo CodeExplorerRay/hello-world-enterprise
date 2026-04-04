@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/98a3a5c97acfb3fff2b0e25e891f511e3dfb4040/banner.svg" alt="Hello World Enterprise Edition" width="100%"/>
+  <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/f5e6b8509e85b6353ffb6625e23ed1d335368b34/banner.svg" alt="Hello World Enterprise Edition" width="100%"/>
 </p>
 
 <p align="center">
