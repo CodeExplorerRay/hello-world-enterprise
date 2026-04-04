@@ -1,8 +1,18 @@
 substitutions:
   _REGION: us-central1
   _GEMINI_API_KEY: ""
+  _AR_REPOSITORY: hello-world-enterprise-images
 
 steps:
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: configure-artifact-registry-auth
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        gcloud auth configure-docker "${_REGION}-docker.pkg.dev" --quiet
+
   - name: gcr.io/cloud-builders/docker
     id: build-backend-images
     entrypoint: bash
@@ -23,7 +33,7 @@ steps:
         do
           name="${entry%%:*}"
           path="${entry#*:}"
-          image="gcr.io/$PROJECT_ID/${name}:$COMMIT_SHA"
+          image="${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${name}:$COMMIT_SHA"
 
           echo "Building ${name}"
           docker build -t "${image}" "./${path}"
@@ -41,7 +51,7 @@ steps:
         mkdir -p /workspace/.cloud-run
 
         AI_URL="$(gcloud run deploy ai-decision-engine \
-          --image "gcr.io/$PROJECT_ID/ai-decision-engine:$COMMIT_SHA" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/ai-decision-engine:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
           --allow-unauthenticated \
@@ -51,7 +61,7 @@ steps:
           --format='value(status.url)')"
 
         TEAPOT_URL="$(gcloud run deploy teapot-service \
-          --image "gcr.io/$PROJECT_ID/teapot-service:$COMMIT_SHA" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/teapot-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
           --allow-unauthenticated \
@@ -61,7 +71,7 @@ steps:
           --format='value(status.url)')"
 
         PUNCTUATION_URL="$(gcloud run deploy punctuation-service \
-          --image "gcr.io/$PROJECT_ID/punctuation-service:$COMMIT_SHA" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/punctuation-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
           --allow-unauthenticated \
@@ -70,7 +80,7 @@ steps:
           --format='value(status.url)')"
 
         FEATURE_FLAG_URL="$(gcloud run deploy feature-flag-service \
-          --image "gcr.io/$PROJECT_ID/feature-flag-service:$COMMIT_SHA" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/feature-flag-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
           --allow-unauthenticated \
@@ -79,7 +89,7 @@ steps:
           --format='value(status.url)')"
 
         AB_TESTING_URL="$(gcloud run deploy ab-testing-service \
-          --image "gcr.io/$PROJECT_ID/ab-testing-service:$COMMIT_SHA" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/ab-testing-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
           --allow-unauthenticated \
@@ -88,7 +98,7 @@ steps:
           --format='value(status.url)')"
 
         CONCATENATION_URL="$(gcloud run deploy concatenation-service \
-          --image "gcr.io/$PROJECT_ID/concatenation-service:$COMMIT_SHA" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/concatenation-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
           --allow-unauthenticated \
@@ -97,7 +107,7 @@ steps:
           --format='value(status.url)')"
 
         CAPITALIZATION_URL="$(gcloud run deploy capitalization-service \
-          --image "gcr.io/$PROJECT_ID/capitalization-service:$COMMIT_SHA" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/capitalization-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
           --allow-unauthenticated \
@@ -106,7 +116,7 @@ steps:
           --format='value(status.url)')"
 
         API_GATEWAY_URL="$(gcloud run deploy api-gateway \
-          --image "gcr.io/$PROJECT_ID/api-gateway:$COMMIT_SHA" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/api-gateway:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
           --allow-unauthenticated \
@@ -149,14 +159,14 @@ steps:
         echo "${response}" | grep '"greeting"' > /dev/null
 
 images:
-  - gcr.io/$PROJECT_ID/ai-decision-engine:$COMMIT_SHA
-  - gcr.io/$PROJECT_ID/teapot-service:$COMMIT_SHA
-  - gcr.io/$PROJECT_ID/punctuation-service:$COMMIT_SHA
-  - gcr.io/$PROJECT_ID/feature-flag-service:$COMMIT_SHA
-  - gcr.io/$PROJECT_ID/ab-testing-service:$COMMIT_SHA
-  - gcr.io/$PROJECT_ID/concatenation-service:$COMMIT_SHA
-  - gcr.io/$PROJECT_ID/capitalization-service:$COMMIT_SHA
-  - gcr.io/$PROJECT_ID/api-gateway:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/ai-decision-engine:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/teapot-service:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/punctuation-service:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/feature-flag-service:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/ab-testing-service:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/concatenation-service:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/capitalization-service:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/api-gateway:$COMMIT_SHA
 
 options:
   logging: CLOUD_LOGGING_ONLY
