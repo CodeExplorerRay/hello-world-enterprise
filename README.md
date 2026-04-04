@@ -243,7 +243,3 @@ Estimated cloud cost: $15/month for "Hello World".
 Was it worth it? No.
 
 But did we have fun? Yes.
-
-ll 9 services working
-Architecture diagram is inherently funny
-Great screenshot/GIF potential
