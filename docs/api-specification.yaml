@@ -33,6 +33,30 @@ tags:
     description: Over-engineered enterprise-grade behaviors
 
 paths:
+  /health:
+    get:
+      tags: [Enterprise]
+      summary: API gateway health probe
+      description: |
+        Lightweight health endpoint used by Cloud Run smoke tests and operational probes.
+      operationId: getGatewayHealth
+      responses:
+        '200':
+          description: Gateway is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: api-gateway
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
   /api/greet:
     get:
       tags: [Greetings, Metadata]

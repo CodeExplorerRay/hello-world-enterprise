@@ -1,148 +1,170 @@
+substitutions:
+  _REGION: us-central1
+  _GEMINI_API_KEY: ""
+
 steps:
-  # Build API Gateway
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: gcr.io/cloud-builders/docker
+    id: build-backend-images
+    entrypoint: bash
     args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/api-gateway:$COMMIT_SHA'
-      - './services/api-gateway'
-    id: 'build-api-gateway'
+      - -c
+      - |
+        set -euo pipefail
 
-  # Build AI Decision Engine
-  - name: 'gcr.io/cloud-builders/docker'
+        for entry in \
+          ai-decision-engine:services/ai-decision-engine \
+          teapot-service:services/teapot-service \
+          punctuation-service:services/punctuation-service \
+          feature-flag-service:services/feature-flag-service \
+          ab-testing-service:services/ab-testing-service \
+          concatenation-service:services/concatenation-service \
+          capitalization-service:services/capitalization-service \
+          api-gateway:services/api-gateway
+        do
+          name="${entry%%:*}"
+          path="${entry#*:}"
+          image="gcr.io/$PROJECT_ID/${name}:$COMMIT_SHA"
+
+          echo "Building ${name}"
+          docker build -t "${image}" "./${path}"
+          docker push "${image}"
+        done
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy-backend-services
+    entrypoint: bash
     args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/ai-decision-engine:$COMMIT_SHA'
-      - './services/ai-decision-engine'
-    id: 'build-ai-decision-engine'
+      - -c
+      - |
+        set -euo pipefail
 
-  # Build Teapot Service
-  - name: 'gcr.io/cloud-builders/docker'
+        mkdir -p /workspace/.cloud-run
+
+        AI_URL="$(gcloud run deploy ai-decision-engine \
+          --image "gcr.io/$PROJECT_ID/ai-decision-engine:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --allow-unauthenticated \
+          --port 8081 \
+          --set-env-vars "GEMINI_API_KEY=${_GEMINI_API_KEY}" \
+          --quiet \
+          --format='value(status.url)')"
+
+        TEAPOT_URL="$(gcloud run deploy teapot-service \
+          --image "gcr.io/$PROJECT_ID/teapot-service:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --allow-unauthenticated \
+          --port 8082 \
+          --set-env-vars "GEMINI_API_KEY=${_GEMINI_API_KEY}" \
+          --quiet \
+          --format='value(status.url)')"
+
+        PUNCTUATION_URL="$(gcloud run deploy punctuation-service \
+          --image "gcr.io/$PROJECT_ID/punctuation-service:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --allow-unauthenticated \
+          --port 8083 \
+          --quiet \
+          --format='value(status.url)')"
+
+        FEATURE_FLAG_URL="$(gcloud run deploy feature-flag-service \
+          --image "gcr.io/$PROJECT_ID/feature-flag-service:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --allow-unauthenticated \
+          --port 8084 \
+          --quiet \
+          --format='value(status.url)')"
+
+        AB_TESTING_URL="$(gcloud run deploy ab-testing-service \
+          --image "gcr.io/$PROJECT_ID/ab-testing-service:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --allow-unauthenticated \
+          --port 8085 \
+          --quiet \
+          --format='value(status.url)')"
+
+        CONCATENATION_URL="$(gcloud run deploy concatenation-service \
+          --image "gcr.io/$PROJECT_ID/concatenation-service:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --allow-unauthenticated \
+          --port 8086 \
+          --quiet \
+          --format='value(status.url)')"
+
+        CAPITALIZATION_URL="$(gcloud run deploy capitalization-service \
+          --image "gcr.io/$PROJECT_ID/capitalization-service:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --allow-unauthenticated \
+          --port 8087 \
+          --quiet \
+          --format='value(status.url)')"
+
+        API_GATEWAY_URL="$(gcloud run deploy api-gateway \
+          --image "gcr.io/$PROJECT_ID/api-gateway:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --allow-unauthenticated \
+          --port 8080 \
+          --set-env-vars "AI_DECISION_ENGINE_URL=${AI_URL},TEAPOT_SERVICE_URL=${TEAPOT_URL},PUNCTUATION_SERVICE_URL=${PUNCTUATION_URL},FEATURE_FLAG_SERVICE_URL=${FEATURE_FLAG_URL},AB_TESTING_SERVICE_URL=${AB_TESTING_URL},CONCATENATION_SERVICE_URL=${CONCATENATION_URL},CAPITALIZATION_SERVICE_URL=${CAPITALIZATION_URL}" \
+          --quiet \
+          --format='value(status.url)')"
+
+        cat <<EOF > /workspace/.cloud-run/urls.env
+        AI_DECISION_ENGINE_URL=${AI_URL}
+        TEAPOT_SERVICE_URL=${TEAPOT_URL}
+        PUNCTUATION_SERVICE_URL=${PUNCTUATION_URL}
+        FEATURE_FLAG_SERVICE_URL=${FEATURE_FLAG_URL}
+        AB_TESTING_SERVICE_URL=${AB_TESTING_URL}
+        CONCATENATION_SERVICE_URL=${CONCATENATION_URL}
+        CAPITALIZATION_SERVICE_URL=${CAPITALIZATION_URL}
+        API_GATEWAY_URL=${API_GATEWAY_URL}
+        EOF
+
+        cat /workspace/.cloud-run/urls.env
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: smoke-test-backend
+    entrypoint: bash
     args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/teapot-service:$COMMIT_SHA'
-      - './services/teapot-service'
-    id: 'build-teapot-service'
+      - -c
+      - |
+        set -euo pipefail
+        source /workspace/.cloud-run/urls.env
 
-  # Build Punctuation Service
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/punctuation-service:$COMMIT_SHA'
-      - './services/punctuation-service'
-    id: 'build-punctuation-service'
+        curl -fsS "${API_GATEWAY_URL}/health"
+        curl -fsS "${AI_DECISION_ENGINE_URL}/health"
+        curl -fsS "${PUNCTUATION_SERVICE_URL}/health"
 
-  # Build Capitalization Service
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/capitalization-service:$COMMIT_SHA'
-      - './services/capitalization-service'
-    id: 'build-capitalization-service'
+        response="$(curl -fsS \
+          -H "Content-Type: application/json" \
+          -d '{"recipient":"World","channel":"web","locale":"en-US","preferredGreeting":"auto"}' \
+          "${API_GATEWAY_URL}/api/greet")"
 
-  # Build Concatenation Service
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/concatenation-service:$COMMIT_SHA'
-      - './services/concatenation-service'
-    id: 'build-concatenation-service'
+        echo "${response}" | grep '"greeting"' > /dev/null
 
-  # Build Feature Flag Service
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/feature-flag-service:$COMMIT_SHA'
-      - './services/feature-flag-service'
-    id: 'build-feature-flag-service'
-
-  # Build A/B Testing Service
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/ab-testing-service:$COMMIT_SHA'
-      - './services/ab-testing-service'
-    id: 'build-ab-testing-service'
-
-  # Build Frontend
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/frontend:$COMMIT_SHA'
-      - './services/frontend'
-    id: 'build-frontend'
-
-  # Deploy to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'api-gateway'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/api-gateway:$COMMIT_SHA'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--port'
-      - '8080'
-    id: 'deploy-api-gateway'
-
-  # Deploy other services (simplified for demo)
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'ai-decision-engine'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/ai-decision-engine:$COMMIT_SHA'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--no-allow-unauthenticated'
-      - '--port'
-      - '8081'
-    id: 'deploy-ai-decision-engine'
-
-  # Continue with other services...
-
-  # Run tests
-  - name: 'gcr.io/cloud-builders/npm'
-    args: ['test']
-    dir: 'services/api-gateway'
-    id: 'test-api-gateway'
-
-  # Update traffic
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'services'
-      - 'update-traffic'
-      - 'api-gateway'
-      - '--to-revisions=LATEST=100'
-      - '--region'
-      - 'us-central1'
-    id: 'update-traffic'
+images:
+  - gcr.io/$PROJECT_ID/ai-decision-engine:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/teapot-service:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/punctuation-service:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/feature-flag-service:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/ab-testing-service:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/concatenation-service:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/capitalization-service:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/api-gateway:$COMMIT_SHA
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: 'E2_HIGHCPU_8'
+  machineType: E2_HIGHCPU_8
 
-timeout: '3600s'
+timeout: 3600s
 
 tags:
-  - 'hello-world-enterprise'
-  - 'ci-cd'
+  - hello-world-enterprise
+  - cloud-run
+  - backend-only
