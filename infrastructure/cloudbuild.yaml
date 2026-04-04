@@ -111,19 +111,19 @@ steps:
           --region "${_REGION}" \
           --allow-unauthenticated \
           --port 8080 \
-          --set-env-vars "AI_DECISION_ENGINE_URL=${AI_URL},TEAPOT_SERVICE_URL=${TEAPOT_URL},PUNCTUATION_SERVICE_URL=${PUNCTUATION_URL},FEATURE_FLAG_SERVICE_URL=${FEATURE_FLAG_URL},AB_TESTING_SERVICE_URL=${AB_TESTING_URL},CONCATENATION_SERVICE_URL=${CONCATENATION_URL},CAPITALIZATION_SERVICE_URL=${CAPITALIZATION_URL}" \
+          --set-env-vars "AI_DECISION_ENGINE_URL=$$AI_URL,TEAPOT_SERVICE_URL=$$TEAPOT_URL,PUNCTUATION_SERVICE_URL=$$PUNCTUATION_URL,FEATURE_FLAG_SERVICE_URL=$$FEATURE_FLAG_URL,AB_TESTING_SERVICE_URL=$$AB_TESTING_URL,CONCATENATION_SERVICE_URL=$$CONCATENATION_URL,CAPITALIZATION_SERVICE_URL=$$CAPITALIZATION_URL" \
           --quiet \
           --format='value(status.url)')"
 
         cat <<EOF > /workspace/.cloud-run/urls.env
-        AI_DECISION_ENGINE_URL=${AI_URL}
-        TEAPOT_SERVICE_URL=${TEAPOT_URL}
-        PUNCTUATION_SERVICE_URL=${PUNCTUATION_URL}
-        FEATURE_FLAG_SERVICE_URL=${FEATURE_FLAG_URL}
-        AB_TESTING_SERVICE_URL=${AB_TESTING_URL}
-        CONCATENATION_SERVICE_URL=${CONCATENATION_URL}
-        CAPITALIZATION_SERVICE_URL=${CAPITALIZATION_URL}
-        API_GATEWAY_URL=${API_GATEWAY_URL}
+        AI_DECISION_ENGINE_URL=$$AI_URL
+        TEAPOT_SERVICE_URL=$$TEAPOT_URL
+        PUNCTUATION_SERVICE_URL=$$PUNCTUATION_URL
+        FEATURE_FLAG_SERVICE_URL=$$FEATURE_FLAG_URL
+        AB_TESTING_SERVICE_URL=$$AB_TESTING_URL
+        CONCATENATION_SERVICE_URL=$$CONCATENATION_URL
+        CAPITALIZATION_SERVICE_URL=$$CAPITALIZATION_URL
+        API_GATEWAY_URL=$$API_GATEWAY_URL
         EOF
 
         cat /workspace/.cloud-run/urls.env
@@ -137,14 +137,14 @@ steps:
         set -euo pipefail
         source /workspace/.cloud-run/urls.env
 
-        curl -fsS "${API_GATEWAY_URL}/health"
-        curl -fsS "${AI_DECISION_ENGINE_URL}/health"
-        curl -fsS "${PUNCTUATION_SERVICE_URL}/health"
+        curl -fsS "$$API_GATEWAY_URL/health"
+        curl -fsS "$$AI_DECISION_ENGINE_URL/health"
+        curl -fsS "$$PUNCTUATION_SERVICE_URL/health"
 
         response="$(curl -fsS \
           -H "Content-Type: application/json" \
           -d '{"recipient":"World","channel":"web","locale":"en-US","preferredGreeting":"auto"}' \
-          "${API_GATEWAY_URL}/api/greet")"
+          "$$API_GATEWAY_URL/api/greet")"
 
         echo "${response}" | grep '"greeting"' > /dev/null
 
