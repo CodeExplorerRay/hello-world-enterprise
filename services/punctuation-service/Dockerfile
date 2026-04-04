@@ -1,10 +1,8 @@
-FROM rust:1.70-slim
+FROM rust:latest
 
 WORKDIR /app
 
 COPY Cargo.toml Cargo.lock ./
-
-RUN cargo build --release
 
 COPY . .
 
