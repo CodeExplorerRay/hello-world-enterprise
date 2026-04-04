@@ -17,11 +17,11 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Smoke test scripts
-      run: |
-        node --check scripts/smoke-test-endpoints.js
-        node --check scripts/rebuild-and-smoke-test.js
+    - name: Validate smoke-test-endpoints syntax
+      run: node --check scripts/smoke-test-endpoints.js
 
-    - name: Validate gateway helper smoke test
-      run: |
-        node services/api-gateway/smoke-test.js
+    - name: Validate rebuild-and-smoke-test syntax
+      run: node --check scripts/rebuild-and-smoke-test.js
+
+    - name: Run API gateway helper smoke test
+      run: node services/api-gateway/smoke-test.js
