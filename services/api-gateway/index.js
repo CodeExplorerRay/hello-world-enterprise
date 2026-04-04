@@ -19,6 +19,14 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+app.get('/health', (_req, res) => {
+  res.json({
+    service: 'api-gateway',
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 async function handleGreet(req, res) {
   const payload = req.method === 'GET' ? req.query : req.body;
 

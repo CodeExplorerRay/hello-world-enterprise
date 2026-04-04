@@ -1,5 +1,6 @@
 use actix_web::{web, App, HttpServer, HttpResponse};
 use serde::{Deserialize, Serialize};
+use std::env;
 
 #[derive(Deserialize)]
 struct PunctuationRequest {
@@ -33,12 +34,24 @@ async fn punctuate(req: web::Json<PunctuationRequest>) -> HttpResponse {
     })
 }
 
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
+        "service": "punctuation-service",
+        "status": "ok",
+    }))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let port = env::var("PORT").unwrap_or_else(|_| "8083".to_string());
+    let bind_address = format!("0.0.0.0:{port}");
+
     HttpServer::new(|| {
-        App::new().route("/punctuate", web::post().to(punctuate))
+        App::new()
+            .route("/health", web::get().to(health))
+            .route("/punctuate", web::post().to(punctuate))
     })
-    .bind("0.0.0.0:8083")?
+    .bind(bind_address)?
     .run()
     .await
 }

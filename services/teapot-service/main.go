@@ -198,6 +198,11 @@ Respond in this JSON format:
 }
 
 func main() {
+    port := os.Getenv("PORT")
+    if strings.TrimSpace(port) == "" {
+        port = "8082"
+    }
+
     http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusTeapot)
         json.NewEncoder(w).Encode(TeapotStatus{
@@ -241,5 +246,5 @@ func main() {
         json.NewEncoder(w).Encode(additions)
     })
 
-    http.ListenAndServe(":8082", nil)
+    http.ListenAndServe(":"+port, nil)
 }

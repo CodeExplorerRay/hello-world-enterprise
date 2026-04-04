@@ -13,6 +13,7 @@ const {
 } = require("./prompts/promptRegistry");
 
 const app = express();
+const port = Number(process.env.PORT || 8081);
 
 app.use(express.json());
 
@@ -56,4 +57,13 @@ app.get("/prompt-registry", (_req, res) => {
   });
 });
 
-app.listen(8081);
+app.get("/health", (_req, res) => {
+  res.json({
+    model: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
+    port,
+    promptRegistryEntries: promptRegistry.length,
+    status: "ok",
+  });
+});
+
+app.listen(port);

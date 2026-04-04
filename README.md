@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/e44149d2b130e29e892d104519f98d9ca8c8a0fb/banner.svg" alt="Hello World Enterprise Edition" width="100%"/>
+  <img src="https://raw.githubusercontent.com/CodeExplorerRay/hello-world-enterprise/98a3a5c97acfb3fff2b0e25e891f511e3dfb4040/banner.svg" alt="Hello World Enterprise Edition" width="100%"/>
 </p>
 
 <p align="center">
@@ -159,7 +159,11 @@ If `GEMINI_API_KEY` is missing, the AI service falls back to mock responses auto
 
 1. Set up Google Cloud project
 2. Run `terraform apply` in infrastructure/terraform
-3. Deploy via Cloud Build
+3. Deploy backend services via a Google Cloud Build trigger
+4. Deploy the frontend via Vercel
+5. Follow:
+   - [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md)
+   - [docs/vercel-frontend-deployment.md](docs/vercel-frontend-deployment.md)
 
 ### Services
 
@@ -168,7 +172,7 @@ Routes requests to microservices with enterprise-grade rate limiting (1 request/
 
 #### AI Decision Engine (Node.js + Gemini)
 Uses Google's Gemini AI to decide between "Hello", "Hi", "Hey", etc., considering moon phases and vibes. 
-**Real integration**: Set `GEMINI_API_KEY` environment variable for actual Gemini 2.5 Flash-Lite API calls.
+**Real integration**: Set `GEMINI_API_KEY` environment variable for actual Gemini Flash-Lite API calls.
 **Demo mode**: Falls back to mock responses when no API key is provided (perfect for demos and testing).
 Can also be demonstrated via Google AI Studio for the challenge submission.
 
@@ -198,7 +202,7 @@ Displays the greeting with a loading animation showing all services.
 | Component | Technology | Justification |
 |-----------|------------|---------------|
 | API Gateway | Node.js/Express | Industry standard for routing |
-| AI Engine | Gemini 2.5 Flash-Lite | Critical greeting decisions (with mock fallback) |
+| AI Engine | Gemini Flash-Lite Latest | Critical greeting decisions (with mock fallback) |
 | Teapot | Go | Fast refusal to brew coffee |
 | Punctuation | Rust | Memory safety for one character |
 | Capitalization | Java/Spring | Enterprise capitalization |
@@ -218,6 +222,8 @@ Displays the greeting with a loading animation showing all services.
 - **Grafana Dashboard**: [monitoring/dashboard.json](monitoring/dashboard.json) includes panels for latency, AI confidence, teapot 418 counts, cost per greeting, and variant distribution.
 - **SLA Document**: [SLA.md](SLA.md) formalizes our deeply unserious uptime commitment.
 - **On-Call Runbook**: [docs/runbook.md](docs/runbook.md) explains what to do when "Hello World" fails at 3 AM.
+- **Cloud Run Deployment Guide**: [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md) documents the service order, env vars, and smoke checks for Google Cloud Run.
+- **Vercel Frontend Deployment Guide**: [docs/vercel-frontend-deployment.md](docs/vercel-frontend-deployment.md) documents the frontend-only deployment path.
 - **CHANGELOG**: [CHANGELOG.md](CHANGELOG.md) records the historical consequences of greeting drift.
 
 ### Contributing
@@ -237,3 +243,7 @@ Estimated cloud cost: $15/month for "Hello World".
 Was it worth it? No.
 
 But did we have fun? Yes.
+
+ll 9 services working
+Architecture diagram is inherently funny
+Great screenshot/GIF potential
