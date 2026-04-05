@@ -1,0 +1,31 @@
+[[services]]
+name = "api-gateway"
+root = "services/api-gateway"
+
+[[services]]
+name = "ai-decision-engine"
+root = "services/ai-decision-engine"
+
+[[services]]
+name = "teapot-service"
+root = "services/teapot-service"
+
+[[services]]
+name = "punctuation-service"
+root = "services/punctuation-service"
+
+[[services]]
+name = "feature-flag-service"
+root = "services/feature-flag-service"
+
+[[services]]
+name = "ab-testing-service"
+root = "services/ab-testing-service"
+
+[[services]]
+name = "concatenation-service"
+root = "services/concatenation-service"
+
+[[services]]
+name = "capitalization-service"
+root = "services/capitalization-service"

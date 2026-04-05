@@ -34,7 +34,7 @@ This guide explains how to migrate your deployment pipeline from GitHub Actions 
 1. Sign up at https://railway.app
 2. Create a new Railway project
 3. Connect your GitLab repository to the project
-4. Railway will auto-detect `railway.json` and deploy all 8 services:
+4. Railway will auto-detect `railway.toml` and deploy all 8 services:
    - api-gateway
    - ai-decision-engine
    - teapot-service
@@ -139,13 +139,15 @@ git push origin main
 ### Build Failures
 - Check GitLab CI/CD logs for specific errors
 - Ensure all CI/CD variables are set correctly
-- Verify railway.json is valid and in repo root
+- Verify railway.toml is valid and in repo root
+- Ensure each service section in railway.toml has correct `root` path
 
 ### Deployment Failures
 - Check Railway build logs for service-specific errors
 - Verify Dockerfile is in each `services/{name}/` folder
 - Ensure all services have correct Node, Python, Go, Rust, Java, or C# setup
 - Check Railway dashboard for service status and logs
+- Verify railway.toml has `[[services]]` section for each service with correct root directory
 
 ### Frontend Deployment Issues
 - Check Vercel/Netlify deployment logs
