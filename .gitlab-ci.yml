@@ -18,6 +18,7 @@ build:backend:
       done
   only:
     - main
+    - master
 
 deploy:backend:
   stage: deploy
@@ -49,6 +50,7 @@ deploy:backend:
     name: production
   only:
     - main
+    - master
 
 test:backend:
   stage: test
@@ -78,6 +80,7 @@ test:backend:
     - deploy:backend
   only:
     - main
+    - master
 
 deploy:frontend:vercel:
   stage: deploy
@@ -92,6 +95,7 @@ deploy:frontend:vercel:
     - deploy:backend
   only:
     - main
+    - master
 
 deploy:frontend:netlify:
   stage: deploy
@@ -107,3 +111,4 @@ deploy:frontend:netlify:
     - deploy:backend
   only:
     - main
+    - master
