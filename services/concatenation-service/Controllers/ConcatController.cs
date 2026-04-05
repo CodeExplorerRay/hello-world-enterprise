@@ -32,6 +32,6 @@ namespace ConcatenationService.Controllers
 
     public class ConcatRequest
     {
-        public string[] Parts { get; set; }
+        public string[] Parts { get; set; } = Array.Empty<string>();
     }
 }
