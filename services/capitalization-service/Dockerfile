@@ -8,7 +8,10 @@ RUN mvn dependency:go-offline
 
 COPY src ./src
 
-RUN mvn package -DskipTests
+# Validate sources are present
+RUN ls -la src/main/java/com/helloworld/enterprise/
+
+RUN mvn clean package -DskipTests
 
 ENV SERVER_PORT=8087
 EXPOSE 8087
