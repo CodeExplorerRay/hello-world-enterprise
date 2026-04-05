@@ -70,9 +70,13 @@ For each service in Railway:
 2. **Build Settings**:
    - Build Command: (leave default)
    - Start Command: (leave default)
-   - Root Directory: `services/{service-name}`
+   - Root Directory: `services/{service-name}` if you deploy manually from the dashboard
 
-3. **Domain Settings**:
+3. **CLI Deployment**:
+   - In GitLab CI, use `railway up --service <service-name> --path-as-root .` from `services/<service-name>`
+   - This forces Railway to build from the service's own folder instead of the repo root
+
+4. **Domain Settings**:
    - Railway provides free `*.up.railway.app` domains
    - Note down the URLs for each service
 
@@ -124,7 +128,7 @@ git push origin main
 - Parallel builds for efficiency
 
 ### 2. Deploy Stage
-- Deploys all services to Railway (auto-detected from railway.json)
+- Deploys all services to Railway using `railway up` from each service folder
 - Each service gets its own `*.up.railway.app` URL
 - Wires service URLs into API gateway environment variables
 - Deploys frontend to both Vercel and Netlify
@@ -181,9 +185,9 @@ git push origin main
 If Railway deployment fails:
 
 1. Check Railway service logs in the dashboard
-2. Verify `railway.json` configuration is correct
+2. Verify `railway.toml` configuration is correct if you are using manual service setup
 3. Ensure Dockerfiles exist in all service folders
-4. Manually redeploy individual services via Railway CLI if needed
+4. Use `railway up --service <service-name> --path-as-root .` from the service folder to redeploy individual services if needed
 
 ## Benefits of Free Migration
 

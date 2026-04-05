@@ -25,21 +25,31 @@ deploy:backend:
   script:
     - npm install -g @railway/cli
     - railway login --token $RAILWAY_TOKEN
-    - railway deploy --service api-gateway
     - |
+      # Deploy each service from its service directory so Railway uses the correct root
+      cd services/api-gateway && railway up --service api-gateway --path-as-root . --ci
+      cd - >/dev/null
+
       # Wait for deployment and get URLs
       sleep 30
       API_GATEWAY_URL=$(railway domain | grep -o 'https://[^ ]*')
       echo "API_GATEWAY_URL=$API_GATEWAY_URL" >> deploy.env
 
       # Deploy other services
-      railway deploy --service ai-decision-engine
-      railway deploy --service teapot-service
-      railway deploy --service punctuation-service
-      railway deploy --service feature-flag-service
-      railway deploy --service ab-testing-service
-      railway deploy --service concatenation-service
-      railway deploy --service capitalization-service
+      cd services/ai-decision-engine && railway up --service ai-decision-engine --path-as-root . --ci
+      cd - >/dev/null
+      cd services/teapot-service && railway up --service teapot-service --path-as-root . --ci
+      cd - >/dev/null
+      cd services/punctuation-service && railway up --service punctuation-service --path-as-root . --ci
+      cd - >/dev/null
+      cd services/feature-flag-service && railway up --service feature-flag-service --path-as-root . --ci
+      cd - >/dev/null
+      cd services/ab-testing-service && railway up --service ab-testing-service --path-as-root . --ci
+      cd - >/dev/null
+      cd services/concatenation-service && railway up --service concatenation-service --path-as-root . --ci
+      cd - >/dev/null
+      cd services/capitalization-service && railway up --service capitalization-service --path-as-root . --ci
+      cd - >/dev/null
   artifacts:
     reports:
       dotenv: deploy.env
