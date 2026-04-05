@@ -26,22 +26,33 @@ deploy:backend:
   script:
     - npm install -g @railway/cli
     - |
-      # Deploy each service by passing the service folder path explicitly.
-      # `--path-as-root` tells Railway to build from that folder as the archive root.
-      railway up services/api-gateway --service api-gateway --path-as-root --ci
+      deploy_service() {
+        token="$1"
+        folder="$2"
+        service="$3"
 
-      # Wait for deployment and get URLs
+        RAILWAY_TOKEN="$token" railway up "services/$folder" --service "$service" --path-as-root --ci
+      }
+
+      # Primary Railway project:
+      # https://railway.com/project/682269ec-f789-4fe3-834e-c3e9b31e8b50
+      deploy_service "$RAILWAY_TOKEN_PRIMARY" "api-gateway" "api-gateway"
+
+      # Wait for deployment and get the API Gateway URL for downstream jobs.
       sleep 30
-      API_GATEWAY_URL=$(railway domain | grep -o 'https://[^ ]*')
+      API_GATEWAY_URL=$(RAILWAY_TOKEN="$RAILWAY_TOKEN_PRIMARY" railway domain --service api-gateway | grep -o 'https://[^ ]*' | head -n 1)
       echo "API_GATEWAY_URL=$API_GATEWAY_URL" >> deploy.env
 
-      railway up services/ai-decision-engine --service ai-decision-engine --path-as-root --ci
-      railway up services/teapot-service --service teapot-service --path-as-root --ci
-      railway up services/punctuation-service --service punctuation-service --path-as-root --ci
-      railway up services/feature-flag-service --service feature-flag-service --path-as-root --ci
-      railway up services/ab-testing-service --service ab-testing-service --path-as-root --ci
-      railway up services/concatenation-service --service concatenation-service --path-as-root --ci
-      railway up services/capitalization-service --service capitalization-service --path-as-root --ci
+      deploy_service "$RAILWAY_TOKEN_PRIMARY" "ai-decision-engine" "ai-decision-engine"
+      deploy_service "$RAILWAY_TOKEN_PRIMARY" "ab-testing-service" "ab-testing-service"
+      deploy_service "$RAILWAY_TOKEN_PRIMARY" "punctuation-service" "punctuation-service"
+      deploy_service "$RAILWAY_TOKEN_PRIMARY" "feature-flag-service" "feature-flag-service"
+
+      # Secondary Railway project:
+      # https://railway.com/project/893b3ff6-3a21-4789-99b8-85cfd02068d3
+      deploy_service "$RAILWAY_TOKEN_SECONDARY" "teapot-service" "teapot-service"
+      deploy_service "$RAILWAY_TOKEN_SECONDARY" "capitalization-service" "capitalization-service"
+      deploy_service "$RAILWAY_TOKEN_SECONDARY" "concatenation-service" "concatenation-service"
   artifacts:
     reports:
       dotenv: deploy.env

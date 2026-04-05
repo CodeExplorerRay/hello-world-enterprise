@@ -25,25 +25,27 @@ This guide explains how to migrate your deployment pipeline from GitHub Actions 
 1. Create a GitLab repository
 2. Import/migrate your code from GitHub
 3. Set up the following CI/CD variables in GitLab:
-   - `RAILWAY_TOKEN`: Railway CLI token
+   - `RAILWAY_TOKEN_PRIMARY`: Railway project token for `api-gateway`, `ai-decision-engine`, `ab-testing-service`, and any other services hosted in the primary Railway project
+   - `RAILWAY_TOKEN_SECONDARY`: Railway project token for `teapot-service`, `capitalization-service`, and `concatenation-service`
    - `VERCEL_TOKEN`: Vercel deployment token
    - `NETLIFY_AUTH_TOKEN`: Netlify access token
    - `GEMINI_API_KEY`: Gemini API key (optional, falls back to mock)
 
 ### Railway Setup (Free)
 1. Sign up at https://railway.app
-2. Create a new Railway project
-3. Connect your GitLab repository to the project
-4. Railway will auto-detect `railway.toml` and deploy all 8 services:
-   - api-gateway
-   - ai-decision-engine
-   - teapot-service
-   - punctuation-service
-   - feature-flag-service
-   - ab-testing-service
-   - concatenation-service
-   - capitalization-service
-5. After first deploy, copy each service's URL and set environment variables in api-gateway
+2. Create the Railway projects you want to use
+3. Generate a project token for each Railway project and store them in GitLab CI/CD variables
+4. Split services by Railway project
+   - Primary project `682269ec-f789-4fe3-834e-c3e9b31e8b50`
+     - `api-gateway`
+     - `ai-decision-engine`
+     - `ab-testing-service`
+     - plus any remaining services you decide to keep in that project
+   - Secondary project `893b3ff6-3a21-4789-99b8-85cfd02068d3`
+     - `teapot-service`
+     - `capitalization-service`
+     - `concatenation-service`
+5. After first deploy, copy each service's URL and set environment variables in `api-gateway`
 
 ## Migration Steps
 
@@ -98,7 +100,8 @@ In GitLab project settings → CI/CD → Variables:
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `RAILWAY_TOKEN` | Variable | Railway CLI token |
+| `RAILWAY_TOKEN_PRIMARY` | Variable | Railway project token for the primary Railway project |
+| `RAILWAY_TOKEN_SECONDARY` | Variable | Railway project token for the secondary Railway project |
 | `VERCEL_TOKEN` | Variable | Vercel deployment token |
 | `NETLIFY_AUTH_TOKEN` | Variable | Netlify access token |
 | `GEMINI_API_KEY` | Variable | Gemini API key (optional) |
