@@ -1,0 +1,107 @@
+stages:
+  - build
+  - deploy
+  - test
+
+build:backend:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - |
+      for service in ai-decision-engine teapot-service punctuation-service feature-flag-service ab-testing-service concatenation-service capitalization-service api-gateway; do
+        echo "Building $service"
+        docker build -t $CI_REGISTRY_IMAGE/$service:$CI_COMMIT_SHA ./services/$service
+        docker push $CI_REGISTRY_IMAGE/$service:$CI_COMMIT_SHA
+      done
+  only:
+    - main
+
+deploy:backend:
+  stage: deploy
+  image: node:latest
+  script:
+    - npm install -g @railway/cli
+    - railway login --token $RAILWAY_TOKEN
+    - railway deploy --service api-gateway
+    - |
+      # Wait for deployment and get URLs
+      sleep 30
+      API_GATEWAY_URL=$(railway domain | grep -o 'https://[^ ]*')
+      echo "API_GATEWAY_URL=$API_GATEWAY_URL" >> deploy.env
+
+      # Deploy other services
+      railway deploy --service ai-decision-engine
+      railway deploy --service teapot-service
+      railway deploy --service punctuation-service
+      railway deploy --service feature-flag-service
+      railway deploy --service ab-testing-service
+      railway deploy --service concatenation-service
+      railway deploy --service capitalization-service
+  artifacts:
+    reports:
+      dotenv: deploy.env
+  environment:
+    name: production
+  only:
+    - main
+
+test:backend:
+  stage: test
+  image: alpine:latest
+  script:
+    - apk add --no-cache curl
+    - source deploy.env
+    - |
+      # Wait for all services to be ready
+      for i in {1..60}; do
+        if curl -fsS $API_GATEWAY_URL/health 2>/dev/null; then
+          break
+        fi
+        echo "Waiting for deployment... ($i/60)"
+        sleep 10
+      done
+
+      # Test health endpoints
+      curl -fsS $API_GATEWAY_URL/health
+
+      # Test greeting API
+      response=$(curl -fsS -H "Content-Type: application/json" \
+        -d '{"recipient":"World","channel":"web","locale":"en-US","preferredGreeting":"auto"}' \
+        $API_GATEWAY_URL/api/greet)
+      echo $response | grep '"greeting"'
+  dependencies:
+    - deploy:backend
+  only:
+    - main
+
+deploy:frontend:vercel:
+  stage: deploy
+  image: node:latest
+  script:
+    - cd services/frontend
+    - npm ci
+    - API_GATEWAY_ORIGIN=$(cat ../../deploy.env | grep API_GATEWAY_URL | cut -d'=' -f2) npx vercel --prod --token $VERCEL_TOKEN --yes
+  environment:
+    name: production
+  dependencies:
+    - deploy:backend
+  only:
+    - main
+
+deploy:frontend:netlify:
+  stage: deploy
+  image: node:latest
+  script:
+    - cd services/frontend
+    - API_GATEWAY_ORIGIN=$(cat ../../deploy.env | grep API_GATEWAY_URL | cut -d'=' -f2) npm ci
+    - npm run build
+    - npx netlify-cli deploy --prod --dir=.next --token=$NETLIFY_AUTH_TOKEN
+  environment:
+    name: production
+  dependencies:
+    - deploy:backend
+  only:
+    - main

@@ -157,12 +157,12 @@ If `GEMINI_API_KEY` is missing, the AI service falls back to mock responses auto
 
 #### Production Deployment
 
-1. Set up Google Cloud project
-2. Run `terraform apply` in infrastructure/terraform
-3. Deploy backend services via a Google Cloud Build trigger
-4. Deploy the frontend via Vercel
+1. Set up GitLab repository
+2. Configure Railway project (free tier)
+3. Deploy backend services via Railway
+4. Deploy the frontend via Vercel and Netlify
 5. Follow:
-   - [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md)
+   - [GITLAB_MIGRATION_GUIDE.md](GITLAB_MIGRATION_GUIDE.md)
    - [docs/vercel-frontend-deployment.md](docs/vercel-frontend-deployment.md)
 
 ### Services
@@ -212,8 +212,8 @@ Displays the greeting with a loading animation showing all services.
 | Frontend | React/Next.js | SSR for 2 words |
 | Database | Firestore | NoSQL for greeting words |
 | Cache | Redis | Caching AI vibes |
-| Infra | Terraform | IaC for greetings |
-| CI/CD | Cloud Build | Continuous greeting deployment |
+| Infra | Railway | Free tier for open-source |
+| CI/CD | GitLab CI/CD | 400 minutes/month free |
 | Monitoring | Cloud Monitoring | 24/7 observability |
 
 ### Extra Polish
@@ -238,8 +238,8 @@ This project is licensed under the "Don't Use This In Production" license.
 
 This project solves exactly zero real-world problems. It's purely for entertainment and demonstrating the absurdity of over-engineering.
 
-Estimated cloud cost: $15/month for "Hello World".
+Estimated cloud cost: $0/month (free tiers for open-source).
 
-Was it worth it? No.
+Was it worth it? Yes, and it's free!
 
 But did we have fun? Yes.
