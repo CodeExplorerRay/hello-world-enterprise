@@ -45,14 +45,17 @@ deploy:backend:
 
       deploy_service "$RAILWAY_TOKEN_PRIMARY" "ai-decision-engine" "ai-decision-engine"
       deploy_service "$RAILWAY_TOKEN_PRIMARY" "ab-testing-service" "ab-testing-service"
-      deploy_service "$RAILWAY_TOKEN_PRIMARY" "punctuation-service" "punctuation-service"
-      deploy_service "$RAILWAY_TOKEN_PRIMARY" "feature-flag-service" "feature-flag-service"
 
       # Secondary Railway project:
       # https://railway.com/project/893b3ff6-3a21-4789-99b8-85cfd02068d3
       deploy_service "$RAILWAY_TOKEN_SECONDARY" "teapot-service" "teapot-service"
       deploy_service "$RAILWAY_TOKEN_SECONDARY" "capitalization-service" "capitalization-service"
       deploy_service "$RAILWAY_TOKEN_SECONDARY" "concatenation-service" "concatenation-service"
+
+      # Tertiary Railway project:
+      # https://railway.com/project/24a8563a-dc36-4df0-be66-0af03f174d33
+      deploy_service "$RAILWAY_TOKEN_TERTIARY" "punctuation-service" "punctuation-service"
+      deploy_service "$RAILWAY_TOKEN_TERTIARY" "feature-flag-service" "feature-flag-service"
   artifacts:
     reports:
       dotenv: deploy.env
