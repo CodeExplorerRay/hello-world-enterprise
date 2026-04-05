@@ -25,7 +25,6 @@ deploy:backend:
   image: node:latest
   script:
     - npm install -g @railway/cli
-    - railway login --token $RAILWAY_TOKEN
     - |
       # Deploy each service by passing the service folder path explicitly.
       # `--path-as-root` tells Railway to build from that folder as the archive root.
