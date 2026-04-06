@@ -15,6 +15,17 @@ def stable_bucket(seed: str) -> int:
 
     return abs(hash_value) % 100
 
+@app.route('/')
+def root():
+    return jsonify({
+        'service': 'ab-testing-service',
+        'version': '1.0.0',
+        'endpoints': {
+            'health': '/health',
+            'test': '/test/<experiment_name>?userId=<user_id>'
+        }
+    })
+
 @app.route('/health')
 def health():
     return jsonify({'status': 'healthy', 'service': 'ab-testing-service'})
