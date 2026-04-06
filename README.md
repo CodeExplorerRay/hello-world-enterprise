@@ -9,7 +9,7 @@
 
 <p align="center">
   <img alt="build" src="https://img.shields.io/badge/build-passing-brightgreen"/>
-  <img alt="deploy" src="https://img.shields.io/badge/deploy-cloud%20run-blue"/>
+  <img alt="deploy" src="https://img.shields.io/badge/deploy-railway%20%2B%20vercel-blue"/>
   <img alt="greeting audit" src="https://img.shields.io/badge/greeting--audit-weekly-success"/>
   <img alt="teapot status" src="https://img.shields.io/badge/teapot-418-critical"/>
   <img alt="ai model" src="https://img.shields.io/badge/ai-gemini--flash--lite--latest-orange"/>
@@ -45,9 +45,9 @@ In the world of enterprise software, complexity is a virtue. Simplicity is for a
 - Feature flags for greeting words
 - A teapot health check (HTTP 418)
 - 24/7 monitoring and alerting
-- Terraform infrastructure
+- Railway service sprawl
 - Docker containers
-- Kubernetes-ready deployments
+- Vercel preview deployments
 - And much more!
 
 ### Demo Highlights
@@ -66,58 +66,26 @@ In the world of enterprise software, complexity is a virtue. Simplicity is for a
                                     THE ARCHITECTURE NOBODY ASKED FOR
                                     ==================================
 
-    ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────┐
-    │   End User  │────▶│  Cloud Load     │────▶│  API Gateway        │
-    │  (Browser)  │     │  Balancer (GCP)  │     │  (Express.js)       │
-    └─────────────┘     └──────────────────┘     └────────┬────────────┘
-                                                          │
-                         ┌────────────────────────────────┼──────────────────────┐
-                         │                                │                      │
-                         ▼                                ▼                      ▼
-              ┌─────────────────┐           ┌──────────────────┐    ┌────────────────────┐
-              │  Greeting       │           │  Greeting AI     │    │  HTCPCP Teapot     │
-              │  Selection      │           │  Decision Engine │    │  Health Check      │
-              │  Service        │           │  (Gemini API)    │    │  Service           │
-              │  (Python/Flask) │           │  (Node.js)       │    │  (Go)              │
-              └───────┬─────────┘           └────────┬─────────┘    └────────┬───────────┘
-                      │                              │                       │
-                      ▼                              ▼                       ▼
-              ┌─────────────────┐           ┌──────────────────┐    ┌────────────────────┐
-              │  Greeting       │           │  AI Response     │    │  Returns 418       │
-              │  Database       │           │  Cache           │    │  "I'm a Teapot"    │
-              │  (Firestore)    │           │  (Redis)         │    │  on /brew           │
-              └─────────────────┘           └──────────────────┘    └────────────────────┘
-                      │
-                      ▼
-              ┌─────────────────┐
-              │  Punctuation    │       ┌──────────────────────────────┐
-              │  Microservice   │       │  Feature Flag Service        │
-              │  (Rust)         │       │  (Should we say "Hello"      │
-              └───────┬─────────┘       │   or "Hi" or "Hey"?)        │
-                      │                 │  (Node.js + Firestore)       │
-                      ▼                 └──────────────────────────────┘
-              ┌─────────────────┐
-              │  Capitalization │       ┌──────────────────────────────┐
-              │  Service        │       │  A/B Testing Service         │
-              │  (Java/Spring)  │       │  (50% get "Hello World"      │
-              └───────┬─────────┘       │   50% get "Hello World!")    │
-                      │                 │  (Python)                    │
-                      ▼                 └──────────────────────────────┘
-              ┌─────────────────┐
-              ┌─────────────────┐
-              │  String         │       ┌──────────────────────────────┐
-              │  Concatenation  │       │  Observability Stack         │
-              │  Service        │       │  (Logging, Metrics, Traces)  │
-              │  (C#/.NET)      │       │  Google Cloud Monitoring     │
-              └───────┬─────────┘       └──────────────────────────────┘
-                      │
-                      ▼
-              ┌─────────────────┐
-              │  Frontend       │
-              │  Rendering      │
-              │  Service        │
-              │  (React + Next) │
-              └─────────────────┘
+    ┌─────────────┐     ┌────────────────────┐     ┌──────────────────────┐
+    │   End User  │────▶│  Vercel Frontend   │────▶│  Railway API Gateway │
+    │  (Browser)  │     │  (Next.js)         │     │  (Express.js)        │
+    └─────────────┘     └────────────────────┘     └─────────┬────────────┘
+                                                             │
+                    ┌────────────────────────────────────────┼─────────────────────────────────────────┐
+                    │                                        │                                         │
+                    ▼                                        ▼                                         ▼
+         ┌──────────────────────┐                ┌──────────────────────┐                  ┌──────────────────────┐
+         │ Greeting AI Decision │                │ Feature Flag Service │                  │ HTCPCP Teapot       │
+         │ Engine (Node.js)     │                │ (Node.js)            │                  │ Service (Go)        │
+         └──────────────────────┘                └──────────────────────┘                  └──────────────────────┘
+                    │                                        │                                         │
+                    ├──────────────────────┬─────────────────┴───────────────┬─────────────────────────┤
+                    │                      │                                 │                         │
+                    ▼                      ▼                                 ▼                         ▼
+         ┌──────────────────────┐  ┌──────────────────────┐        ┌──────────────────────┐  ┌──────────────────────┐
+         │ Punctuation Service  │  │ Capitalization       │        │ Concatenation        │  │ A/B Testing Service  │
+         │ (Rust)               │  │ Service (Spring)     │        │ Service (.NET)       │  │ (Python/Flask)       │
+         └──────────────────────┘  └──────────────────────┘        └──────────────────────┘  └──────────────────────┘
 ```
 
 ### Getting Started
@@ -131,8 +99,8 @@ In the world of enterprise software, complexity is a virtue. Simplicity is for a
 - .NET 7+
 - Python 3.11+
 - Docker
-- Terraform
-- Google Cloud account (for deployment)
+- Railway account (for backend deployment)
+- Vercel account (for frontend deployment)
 
 #### Local Development
 
@@ -157,13 +125,15 @@ If `GEMINI_API_KEY` is missing, the AI service falls back to mock responses auto
 
 #### Production Deployment
 
-1. Set up GitLab repository
-2. Configure Railway project (free tier)
-3. Deploy backend services via Railway
-4. Deploy the frontend via Vercel and Netlify
-5. Follow:
-   - [GITLAB_MIGRATION_GUIDE.md](GITLAB_MIGRATION_GUIDE.md)
-   - [docs/vercel-frontend-deployment.md](docs/vercel-frontend-deployment.md)
+1. Set up your GitLab or GitHub repository
+2. Deploy backend services via Railway
+3. Configure the `api-gateway` service URLs in Railway
+4. Deploy the frontend via Vercel
+5. Add Netlify only if you want a secondary frontend deployment
+
+Follow:
+- [GITLAB_MIGRATION_GUIDE.md](GITLAB_MIGRATION_GUIDE.md)
+- [docs/vercel-frontend-deployment.md](docs/vercel-frontend-deployment.md)
 
 ### Services
 
@@ -212,9 +182,9 @@ Displays the greeting with a loading animation showing all services.
 | Frontend | React/Next.js | SSR for 2 words |
 | Database | Firestore | NoSQL for greeting words |
 | Cache | Redis | Caching AI vibes |
-| Infra | Railway | Free tier for open-source |
+| Infra | Railway + Vercel | Free-tier friendly backend and frontend hosting |
 | CI/CD | GitLab CI/CD | 400 minutes/month free |
-| Monitoring | Cloud Monitoring | 24/7 observability |
+| Monitoring | Platform logs + smoke checks | Enough operational drama for two words |
 
 ### Extra Polish
 
@@ -222,7 +192,7 @@ Displays the greeting with a loading animation showing all services.
 - **Grafana Dashboard**: [monitoring/dashboard.json](monitoring/dashboard.json) includes panels for latency, AI confidence, teapot 418 counts, cost per greeting, and variant distribution.
 - **SLA Document**: [SLA.md](SLA.md) formalizes our deeply unserious uptime commitment.
 - **On-Call Runbook**: [docs/runbook.md](docs/runbook.md) explains what to do when "Hello World" fails at 3 AM.
-- **Cloud Run Deployment Guide**: [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md) documents the service order, env vars, and smoke checks for Google Cloud Run.
+- **Cloud Run Deployment Guide**: [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md) is kept as a legacy alternative if you want a GCP-based deployment path later.
 - **Vercel Frontend Deployment Guide**: [docs/vercel-frontend-deployment.md](docs/vercel-frontend-deployment.md) documents the frontend-only deployment path.
 - **CHANGELOG**: [CHANGELOG.md](CHANGELOG.md) records the historical consequences of greeting drift.
 

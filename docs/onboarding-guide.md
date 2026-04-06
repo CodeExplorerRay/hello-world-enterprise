@@ -63,7 +63,7 @@ User Request → API Gateway → 7 Parallel Microservices → Frontend Response
 ### Starting Services
 ```bash
 # Option 1: Docker Compose (recommended)
-docker-compose -f infrastructure/docker-compose.yml up --build
+docker compose -f infrastructure/docker-compose.yml up --build
 
 # Option 2: Manual startup (for development)
 cd services/api-gateway && npm start &
@@ -84,15 +84,18 @@ curl http://localhost:8082/health
 
 ## Deployment Process
 
-### Cloud Deployment
-1. Set up Google Cloud Project
-2. Configure Terraform: `cd infrastructure/terraform && terraform apply`
-3. Deploy via Cloud Build
-4. Verify monitoring in Cloud Monitoring
+### Production Deployment
+1. Deploy backend services to Railway
+2. Set all service URLs in the `api-gateway` Railway variables
+3. Confirm `api-gateway` works at `/health` and `/api/greet`
+4. Set `API_GATEWAY_ORIGIN` in Vercel
+5. Deploy the frontend from `services/frontend`
+
+See `GITLAB_MIGRATION_GUIDE.md` and `docs/vercel-frontend-deployment.md` for the exact platform setup.
 
 ### Local Deployment
 ```bash
-docker-compose -f infrastructure/docker-compose.yml up -d
+docker compose -f infrastructure/docker-compose.yml up -d
 ```
 
 ## Testing Strategy
@@ -202,7 +205,7 @@ A: Because enterprise software requires complexity to be taken seriously.
 A: No. Simplicity is for amateurs.
 
 ### Q: What's the cloud cost?
-A: Approximately $15/month for "Hello World".
+A: Currently targeted at $0/month on the Railway and Vercel free tiers.
 
 ### Q: Is this production-ready?
 A: Absolutely not. This is for entertainment only.

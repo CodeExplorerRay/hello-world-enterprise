@@ -21,8 +21,8 @@ info:
 servers:
   - url: http://localhost:8080
     description: Local API Gateway
-  - url: https://api.helloworld-enterprise.com
-    description: Production API Gateway
+  - url: https://api-gateway.up.railway.app
+    description: Example Railway production API Gateway
 
 tags:
   - name: Greetings
@@ -38,7 +38,7 @@ paths:
       tags: [Enterprise]
       summary: API gateway health probe
       description: |
-        Lightweight health endpoint used by Cloud Run smoke tests and operational probes.
+        Lightweight health endpoint used by Railway smoke tests and operational probes.
       operationId: getGatewayHealth
       responses:
         '200':

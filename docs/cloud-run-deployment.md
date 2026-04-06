@@ -1,6 +1,8 @@
 # Cloud Run Backend Deployment
 
-This repo now expects the backend microservices to deploy to Google Cloud Run, while the frontend deploys separately to Vercel.
+This document is a legacy alternative deployment path. The actively maintained production setup for this repo is Railway for backend services and Vercel for the frontend.
+
+Use this guide only if you intentionally want a Google Cloud Run deployment instead of the default Railway-based setup.
 
 ## Target architecture
 

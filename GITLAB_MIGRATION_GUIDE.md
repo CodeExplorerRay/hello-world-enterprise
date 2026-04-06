@@ -13,11 +13,11 @@ This guide explains how to migrate your deployment pipeline from GitHub Actions 
 - **Backend**: Google Cloud Run (requires billing)
 - **Frontend**: Vercel
 
-### New (GitLab + Railway - Completely Free)
+### New (GitLab + Railway + Vercel - Completely Free)
 - **Source Control**: GitLab
 - **CI/CD**: GitLab CI/CD (400 minutes/month free)
 - **Backend**: Railway (512MB RAM, 1GB disk free)
-- **Frontend**: Vercel + Netlify (free for open-source)
+- **Frontend**: Vercel (Netlify optional)
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ This guide explains how to migrate your deployment pipeline from GitHub Actions 
    - `RAILWAY_TOKEN_PRIMARY`: Railway project token for `api-gateway`, `ai-decision-engine`, `ab-testing-service`, and any other services hosted in the primary Railway project
    - `RAILWAY_TOKEN_SECONDARY`: Railway project token for `teapot-service`, `capitalization-service`, and `concatenation-service`
    - `VERCEL_TOKEN`: Vercel deployment token
-   - `NETLIFY_AUTH_TOKEN`: Netlify access token
+   - `NETLIFY_AUTH_TOKEN`: Netlify access token if you choose to add Netlify as a secondary frontend
    - `GEMINI_API_KEY`: Gemini API key (optional, falls back to mock)
 
 ### Railway Setup (Free)
@@ -103,17 +103,17 @@ In GitLab project settings → CI/CD → Variables:
 | `RAILWAY_TOKEN_PRIMARY` | Variable | Railway project token for the primary Railway project |
 | `RAILWAY_TOKEN_SECONDARY` | Variable | Railway project token for the secondary Railway project |
 | `VERCEL_TOKEN` | Variable | Vercel deployment token |
-| `NETLIFY_AUTH_TOKEN` | Variable | Netlify access token |
+| `NETLIFY_AUTH_TOKEN` | Variable | Netlify access token for an optional secondary frontend |
 | `GEMINI_API_KEY` | Variable | Gemini API key (optional) |
 
 ### 5. Update Frontend Configuration
-Set `API_GATEWAY_ORIGIN` in both Vercel and Netlify to your live Railway `api-gateway` origin:
+Set `API_GATEWAY_ORIGIN` in Vercel to your live Railway `api-gateway` origin:
 
 ```text
 API_GATEWAY_ORIGIN=https://api-gateway.up.railway.app
 ```
 
-The frontend rewrite already lives in `services/frontend/next.config.js`, so `services/frontend/vercel.json` and `services/frontend/netlify.toml` can stay generic.
+The frontend rewrite already lives in `services/frontend/next.config.js`, so `services/frontend/vercel.json` and `services/frontend/netlify.toml` can stay generic. If you also deploy to Netlify, set the same `API_GATEWAY_ORIGIN` there.
 
 ### 6. Deploy
 Push to the `main` branch to trigger the pipeline:
@@ -135,7 +135,8 @@ git push origin main
 - Deploys all services to Railway using `railway up` from each service folder
 - Each service gets its own `*.up.railway.app` URL
 - Wires service URLs into API gateway environment variables
-- Deploys frontend to both Vercel and Netlify
+- Deploys frontend to Vercel
+- Optionally deploys the same frontend to Netlify
 
 ### 3. Test Stage
 - Runs smoke tests against deployed services
@@ -158,7 +159,8 @@ git push origin main
 - Verify railway.toml has `[[services]]` section for each service with correct root directory
 
 ### Frontend Deployment Issues
-- Check Vercel/Netlify deployment logs
+- Check Vercel deployment logs
+- If you also use Netlify, check its deployment logs separately
 - Verify `API_GATEWAY_ORIGIN` environment variable is set in the frontend platform you are deploying to
 - Confirm api-gateway service URL is reachable
 
@@ -174,7 +176,7 @@ git push origin main
 - **GitLab CI/CD**: 400 minutes/month free
 - **Railway**: 512MB RAM, 1GB disk free
 - **Vercel**: Free for open-source
-- **Netlify**: Free tier available
+- **Netlify**: Free tier available if you choose a secondary frontend
 - **Total**: $0/month
 
 ## Railway Free Tier Limits
@@ -198,7 +200,7 @@ If Railway deployment fails:
 1. **Zero Cost**: Completely free for open-source projects
 2. **Unified Pipeline**: Single platform for CI/CD
 3. **Better Reliability**: Railway's managed infrastructure
-4. **Dual Frontend**: Deploy to both Vercel and Netlify
+4. **Optional Secondary Frontend**: Add Netlify only when you want a backup deployment
 5. **Container Registry**: Built-in Docker registry
 6. **Advanced Features**: Better artifact management
 
