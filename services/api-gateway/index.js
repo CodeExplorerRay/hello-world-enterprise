@@ -7,6 +7,9 @@ const { buildEmergencyGreetingResponse, orchestrateGreeting } = require('./greet
 app.use(cors());
 app.use(express.json());
 
+// Trust proxy (Railway load balancer sets X-Forwarded-For)
+app.set('trust proxy', 1);
+
 // Rate limiter: 100 requests per minute (relaxed for testing)
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
