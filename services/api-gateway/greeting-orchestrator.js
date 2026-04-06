@@ -1,5 +1,7 @@
 const ADRS_CONSULTED = 47;
 const DEFAULT_TIMEOUT_MS = 3000;
+const AI_DECISION_TIMEOUT_MS = 12000;
+const AI_ANALYSIS_TIMEOUT_MS = 8000;
 const BASE_INFRA_COST_PER_GREETING = 0.0142;
 const COST_PER_AI_TOKEN = 0.000018;
 
@@ -49,6 +51,19 @@ function buildServiceUrls(env = process.env) {
     featureFlagService: env.FEATURE_FLAG_SERVICE_URL || 'http://localhost:8084',
     punctuationService: env.PUNCTUATION_SERVICE_URL || 'http://localhost:8083',
     teapotService: env.TEAPOT_SERVICE_URL || 'http://localhost:8082',
+  };
+}
+
+function buildServiceTimeouts(env = process.env) {
+  const parseTimeout = (value, fallback) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  };
+
+  return {
+    default: parseTimeout(env.GATEWAY_TIMEOUT_MS, DEFAULT_TIMEOUT_MS),
+    aiAnalysis: parseTimeout(env.AI_ANALYSIS_TIMEOUT_MS, AI_ANALYSIS_TIMEOUT_MS),
+    aiDecision: parseTimeout(env.AI_DECISION_TIMEOUT_MS, AI_DECISION_TIMEOUT_MS),
   };
 }
 
@@ -164,7 +179,8 @@ function buildUrlWithQuery(baseUrl, path, query) {
 
 async function fetchJson(url, options = {}) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.timeoutMs || DEFAULT_TIMEOUT_MS);
+  const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, {
@@ -178,6 +194,12 @@ async function fetchJson(url, options = {}) {
     }
 
     return await response.json();
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`Timed out after ${timeoutMs}ms calling ${url}`);
+    }
+
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -198,6 +220,7 @@ async function orchestrateGreeting(payload, env = process.env) {
   const startedAt = Date.now();
   const context = normalizeGreetRequest(payload);
   const urls = buildServiceUrls(env);
+  const timeouts = buildServiceTimeouts(env);
 
   const invokedServices = [
     'feature-flag-service:greeting-word',
@@ -214,7 +237,7 @@ async function orchestrateGreeting(payload, env = process.env) {
   const [greetingFlag, aiFlag, experiment, teapotStatus] = await Promise.all([
     fetchJsonOrFallback(
       buildUrlWithQuery(urls.featureFlagService, '/flags/greeting-word', context),
-      {},
+      { timeoutMs: timeouts.default },
       {
         approvedBy: 'Gateway fallback',
         enabled: true,
@@ -226,7 +249,7 @@ async function orchestrateGreeting(payload, env = process.env) {
     ),
     fetchJsonOrFallback(
       buildUrlWithQuery(urls.featureFlagService, '/flags/ai-greeting-enabled', context),
-      {},
+      { timeoutMs: timeouts.default },
       {
         approvedBy: 'Gateway fallback',
         enabled: false,
@@ -242,7 +265,7 @@ async function orchestrateGreeting(payload, env = process.env) {
         locale: context.locale,
         userId: context.userId,
       }),
-      {},
+      { timeoutMs: timeouts.default },
       {
         experiment: 'punctuation-style',
         punctuation: '!',
@@ -255,7 +278,7 @@ async function orchestrateGreeting(payload, env = process.env) {
     ),
     fetchJsonOrFallback(
       buildUrlWithQuery(urls.teapotService, '/health', {}),
-      { acceptableStatuses: [200, 418] },
+      { acceptableStatuses: [200, 418], timeoutMs: timeouts.default },
       {
         httpCode: 418,
         message: 'Teapot health check unavailable, but the gateway still believes in teapots.',
@@ -269,7 +292,7 @@ async function orchestrateGreeting(payload, env = process.env) {
     invokedServices.push('ai-decision-engine');
     aiDecision = await fetchJsonOrFallback(
       buildUrlWithQuery(urls.aiDecisionEngine, '/decide', context),
-      {},
+      { timeoutMs: timeouts.aiDecision },
       {
         aiModel: 'gateway-fallback',
         confidence: 0,
@@ -288,6 +311,7 @@ async function orchestrateGreeting(payload, env = process.env) {
       body: JSON.stringify({ text: greetingDecision.word }),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
+      timeoutMs: timeouts.default,
     },
     {
       capitalized: capitalizeWord(greetingDecision.word),
@@ -303,6 +327,7 @@ async function orchestrateGreeting(payload, env = process.env) {
       body: JSON.stringify({ parts: [capitalizedGreeting.capitalized || capitalizeWord(greetingDecision.word), ' ', context.recipient] }),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
+      timeoutMs: timeouts.default,
     },
     {
       Note: 'Concatenation service unavailable. Falling back to string interpolation.',
@@ -319,6 +344,7 @@ async function orchestrateGreeting(payload, env = process.env) {
       }),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
+      timeoutMs: timeouts.default,
     },
     {
       original: concatenated.result || concatenated.Result || joinedText,
@@ -331,67 +357,72 @@ async function orchestrateGreeting(payload, env = process.env) {
   const aiTokensUsed = aiDecision ? aiDecision.tokensUsed || 0 : 0;
   const costEstimate = estimateGreetingCost(aiTokensUsed, invokedServices.length);
   const finalGreeting = aprilFoolsActive ? `APRIL FOOLS ${context.recipient}!` : punctuated.punctuated;
-  const abAnalysis = await fetchJsonOrFallback(
-    buildUrlWithQuery(urls.aiDecisionEngine, '/ab-analysis', {}),
-    {},
-    {
-      experimentName: 'Exclamation Mark Optimization',
-      executiveSummary: 'A/B analysis unavailable. Proceeding with punctuation governance by instinct.',
-      statisticalAnalysis: {
-        honestyNote: 'Analysis service unavailable.',
-        isSignificant: false,
+  const narrativeRequest = {
+    abTestingService: {
+      status: experiment.fallbackReason ? 'DEGRADED' : 'HEALTHY',
+      variant: experiment.variant || 'A',
+    },
+    aiDecisionEngine: {
+      lastGreeting: greetingDecision.word,
+      status: aiDecision && aiDecision._fallback ? 'DEGRADED' : (aiFlag.enabled && aiFlag.value ? 'HEALTHY' : 'SKIPPED'),
+    },
+    apiGateway: {
+      responseTimeMs: Date.now() - startedAt,
+      status: 'HEALTHY',
+    },
+    capitalizationService: {
+      startupMs: capitalizedGreeting.springBootStartupTimeMs || 4200,
+      status: capitalizedGreeting.fallbackReason ? 'DEGRADED' : 'HEALTHY',
+    },
+    concatenationService: {
+      status: concatenated.fallbackReason ? 'DEGRADED' : 'HEALTHY',
+    },
+    featureFlagService: {
+      flagCount: 2,
+      status: greetingFlag.fallbackReason || aiFlag.fallbackReason ? 'DEGRADED' : 'HEALTHY',
+    },
+    frontend: {
+      status: 'READY',
+    },
+    punctuationService: {
+      status: punctuated.fallbackReason ? 'DEGRADED' : 'HEALTHY',
+    },
+    teapotService: {
+      status: teapotStatus.status || "HTTP 418",
+    },
+  };
+
+  const [abAnalysis, systemNarrative] = await Promise.all([
+    fetchJsonOrFallback(
+      buildUrlWithQuery(urls.aiDecisionEngine, '/ab-analysis', {}),
+      { timeoutMs: timeouts.aiAnalysis },
+      {
+        experimentName: 'Exclamation Mark Optimization',
+        executiveSummary: 'A/B analysis unavailable. Proceeding with punctuation governance by instinct.',
+        statisticalAnalysis: {
+          honestyNote: 'Analysis service unavailable.',
+          isSignificant: false,
+        },
       },
-    },
-  );
-  const systemNarrative = await fetchJsonOrFallback(
-    buildUrlWithQuery(urls.aiDecisionEngine, '/status-narrative', {}),
-    {
-      body: JSON.stringify({
-        abTestingService: {
-          status: experiment.fallbackReason ? 'DEGRADED' : 'HEALTHY',
-          variant: experiment.variant || 'A',
-        },
-        aiDecisionEngine: {
-          lastGreeting: greetingDecision.word,
-          status: aiDecision && aiDecision._fallback ? 'DEGRADED' : (aiFlag.enabled && aiFlag.value ? 'HEALTHY' : 'SKIPPED'),
-        },
-        apiGateway: {
-          responseTimeMs: Date.now() - startedAt,
-          status: 'HEALTHY',
-        },
-        capitalizationService: {
-          startupMs: capitalizedGreeting.springBootStartupTimeMs || 4200,
-          status: capitalizedGreeting.fallbackReason ? 'DEGRADED' : 'HEALTHY',
-        },
-        concatenationService: {
-          status: concatenated.fallbackReason ? 'DEGRADED' : 'HEALTHY',
-        },
-        featureFlagService: {
-          flagCount: 2,
-          status: greetingFlag.fallbackReason || aiFlag.fallbackReason ? 'DEGRADED' : 'HEALTHY',
-        },
-        frontend: {
-          status: 'READY',
-        },
-        punctuationService: {
-          status: punctuated.fallbackReason ? 'DEGRADED' : 'HEALTHY',
-        },
-        teapotService: {
-          status: teapotStatus.status || "HTTP 418",
-        },
-      }),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-    },
-    {
-      narrative: 'The system status narrator is unavailable, so the gateway is reluctantly speaking in plain prose.',
-      overallMood: 'Operationally awkward',
-      heroOfTheHour: 'The gateway fallback logic',
-      villainOfTheHour: 'Narrative generation latency',
-      teapotWisdom: 'Even missing poetry can still be HTTP 418 compliant.',
-      questStatus: 'Hello World remains achievable.',
-    },
-  );
+    ),
+    fetchJsonOrFallback(
+      buildUrlWithQuery(urls.aiDecisionEngine, '/status-narrative', {}),
+      {
+        body: JSON.stringify(narrativeRequest),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        timeoutMs: timeouts.aiAnalysis,
+      },
+      {
+        narrative: 'The system status narrator is unavailable, so the gateway is reluctantly speaking in plain prose.',
+        overallMood: 'Operationally awkward',
+        heroOfTheHour: 'The gateway fallback logic',
+        villainOfTheHour: 'Narrative generation latency',
+        teapotWisdom: 'Even missing poetry can still be HTTP 418 compliant.',
+        questStatus: 'Hello World remains achievable.',
+      },
+    ),
+  ]);
 
   return {
     greeting: finalGreeting,
