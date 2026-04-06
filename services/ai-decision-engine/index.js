@@ -13,7 +13,36 @@ const {
 } = require("./prompts/promptRegistry");
 
 const app = express();
-const port = Number(process.env.PORT || 8081);
+const host = process.env.HOST || "0.0.0.0";
+
+function resolvePort() {
+  const configuredPort =
+    process.env.AI_DECISION_ENGINE_PORT ||
+    process.env.SERVICE_PORT ||
+    process.env.PORT ||
+    "8081";
+  const port = Number(configuredPort);
+
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error(`Invalid port configuration: ${configuredPort}`);
+  }
+
+  return {
+    configuredPort,
+    injectedPort: process.env.PORT,
+    port,
+    source: process.env.AI_DECISION_ENGINE_PORT
+      ? "AI_DECISION_ENGINE_PORT"
+      : process.env.SERVICE_PORT
+        ? "SERVICE_PORT"
+        : process.env.PORT
+          ? "PORT"
+          : "default",
+  };
+}
+
+const portConfig = resolvePort();
+const port = portConfig.port;
 
 app.use(express.json());
 
@@ -85,14 +114,24 @@ app.get("/prompt-registry", (_req, res) => {
 app.get("/health", (_req, res) => {
   res.json({
     model: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
+    portSource: portConfig.source,
     port,
     promptRegistryEntries: promptRegistry.length,
     status: "ok",
   });
 });
 
-app.listen(port, () => {
+app.listen(port, host, () => {
   console.log(`ai-decision-engine listening on port ${port}`);
+  if (
+    portConfig.source !== "PORT" &&
+    portConfig.injectedPort &&
+    Number(portConfig.injectedPort) !== port
+  ) {
+    console.warn(
+      `Ignoring injected PORT=${portConfig.injectedPort}; using ${portConfig.source}=${portConfig.configuredPort}`,
+    );
+  }
   if (process.env.GEMINI_API_KEY) {
     console.log("Gemini API key configured");
   } else {
