@@ -55,4 +55,7 @@ def run_test(experiment_name):
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', '8085')))
+    # Note: In production with gunicorn, this won't be called
+    # PORT env var is set by Railway to 8085 or other values
+    port = int(os.environ.get('PORT', '8085'))
+    app.run(host='0.0.0.0', port=port, debug=False)
