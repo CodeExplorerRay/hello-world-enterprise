@@ -22,6 +22,19 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+app.get('/', (_req, res) => {
+  res.json({
+    service: 'api-gateway',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      greetGet: '/api/greet?recipient=World&channel=web&locale=en-US',
+      greetPost: '/api/greet',
+    },
+    usage: 'Call GET /api/greet with query params or POST /api/greet with JSON to orchestrate a greeting.',
+  });
+});
+
 app.get('/health', (_req, res) => {
   res.json({
     service: 'api-gateway',
@@ -46,4 +59,6 @@ app.get('/api/greet', handleGreet);
 app.post('/api/greet', handleGreet);
 
 const port = Number(process.env.PORT || 8080);
-app.listen(port);
+app.listen(port, () => {
+  console.log(`api-gateway listening on port ${port}`);
+});
