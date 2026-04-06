@@ -151,6 +151,26 @@ function isFlagEnabled(value?: boolean | string | null) {
   return value === true || value === 'true';
 }
 
+function formatOptionalValue(value?: boolean | string | number | null) {
+  if (value === undefined) {
+    return 'Unavailable';
+  }
+
+  if (value === null) {
+    return 'None';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'True' : 'False';
+  }
+
+  if (value === '') {
+    return 'Empty';
+  }
+
+  return String(value);
+}
+
 function buildFallbackMetadata(): MetadataPayload {
   return {
     error: 'API not available. Showing the enterprise-approved fallback greeting.',
@@ -195,8 +215,10 @@ function FactList({ items }: { items: DetailRow[] }) {
       {items.map((item) => (
         <div className={styles.factItem} key={item.label}>
           <span className={styles.factTerm}>{item.label}</span>
-          <p className={styles.factValue}>{item.value}</p>
-          {item.note ? <p className={styles.factNote}>{item.note}</p> : null}
+          <div className={styles.factContent}>
+            <p className={styles.factValue}>{item.value}</p>
+            {item.note ? <p className={styles.factNote}>{item.note}</p> : null}
+          </div>
         </div>
       ))}
     </div>
@@ -217,52 +239,20 @@ function SectionFrame({ children, className, description, eyebrow, title }: Sect
 }
 
 function LoadingExperience({ stage }: { stage: string }) {
-  const activeIndex = Math.max(loadingStages.indexOf(stage), 0);
-  const windowSize = 5;
-  const startIndex = Math.max(0, Math.min(activeIndex - 1, loadingStages.length - windowSize));
-  const visibleStages = loadingStages.slice(startIndex, startIndex + windowSize);
-
   return (
     <main className={styles.loadingPage}>
-      <div className={styles.loadingShell}>
-        <section className={styles.loadingPanel}>
-          <div className={styles.loadingOrb}>{'</>'}</div>
-          <p className={styles.heroKicker}>HelloWorld Enterprise</p>
-          <h1 className={styles.loadingTitle}>Building the executive greeting brief.</h1>
-          <p className={styles.loadingLead}>
-            The platform is coordinating governance, experimentation, teapot ceremony, and
-            executive judgment before it dares to render two words.
-          </p>
-          <div className={styles.loadingBar}>
-            <div className={styles.loadingBarFill} />
-          </div>
-          <p className={styles.loadingFootnote}>
-            Current stage: <strong>{stage}</strong>
-          </p>
-        </section>
-
-        <aside className={styles.loadingSidecar}>
-          <p className={styles.eyebrow}>Live orchestration feed</p>
-          <div className={styles.loadingStepGrid}>
-            {visibleStages.map((label, index) => {
-              const sequence = startIndex + index + 1;
-              const isActive = label === stage;
-
-              return (
-                <div
-                  className={cx(styles.loadingStep, isActive && styles.loadingStepActive)}
-                  key={label}
-                >
-                  <span className={styles.loadingStepIndex}>
-                    {String(sequence).padStart(2, '0')}
-                  </span>{' '}
-                  {label}
-                </div>
-              );
-            })}
-          </div>
-        </aside>
-      </div>
+      <section className={styles.loadingPanel}>
+        <div className={styles.loadingOrb}>{'</>'}</div>
+        <p className={styles.loadingEyebrow}>HelloWorld Enterprise</p>
+        <h1 className={styles.loadingTitle}>Preparing the orchestration brief</h1>
+        <p className={styles.loadingLead}>{stage}</p>
+        <div className={styles.loadingBar}>
+          <div className={styles.loadingBarFill} />
+        </div>
+        <p className={styles.loadingFootnote}>
+          Routing through AI, feature governance, experimentation, and teapot protocol.
+        </p>
+      </section>
     </main>
   );
 }
@@ -343,10 +333,13 @@ export default function Home() {
   const decision = resolvedMetadata.greetingDecision;
   const aiDecision = resolvedMetadata.aiDecision;
   const aiFlag = resolvedMetadata.featureFlags?.aiGreetingEnabled;
+  const greetingWordFlag = resolvedMetadata.featureFlags?.greetingWord;
   const greetingTone = sourceTone(decision?.source);
   const aiEnabled = isFlagEnabled(aiFlag?.value);
-  const showLiveAiPanel = decision?.source === 'ai-decision-engine' && aiDecision && !aiDecision._fallback;
-  const showAiFallbackPanel = decision?.source === 'ai-decision-engine-fallback' && aiDecision;
+  const showLiveAiPanel =
+    decision?.source === 'ai-decision-engine' && aiDecision && !aiDecision._fallback;
+  const showAiFallbackPanel =
+    decision?.source === 'ai-decision-engine-fallback' && aiDecision;
   const operatingMode = showLiveAiPanel
     ? 'Live AI routing'
     : showAiFallbackPanel
@@ -379,10 +372,28 @@ export default function Home() {
         : 'Respectfully no';
   const rolloutLabel = `${aiFlag?.rolloutPercentage ?? 0}%`;
   const teapotStatusLabel = `HTTP ${resolvedMetadata.teapotStatus ?? 418}`;
-  const teapotWisdom =
-    resolvedMetadata.teapotWisdom?.musing ||
+  const topLevelTeapotMusing =
+    resolvedMetadata.teapotWisdom?.musing || 'No dedicated teapot musing was attached.';
+  const narrativeTeapotWisdom =
     resolvedMetadata.systemNarrative?.teapotWisdom ||
-    'The teapot remains ceremonial, compliant, and profoundly unhelpful.';
+    'No narrative teapot wisdom was attached.';
+  const routingSummary = showLiveAiPanel
+    ? 'The live Chief Greeting Officer path supplied the final executive recommendation for this request.'
+    : showAiFallbackPanel
+      ? 'The AI layer engaged, then the platform completed the request through its fallback posture.'
+      : greetingTone === 'policy'
+        ? 'The request stayed on a deterministic, policy-governed route without live AI escalation.'
+        : 'The platform completed the greeting using its deterministic baseline posture.';
+  const experimentTitle =
+    resolvedMetadata.abAnalysis?.experimentName || 'Punctuation governance';
+  const experimentSummary =
+    resolvedMetadata.abAnalysis?.executiveSummary ||
+    'This request did not return an explicit experiment summary.';
+  const narrativeSummary =
+    resolvedMetadata.systemNarrative?.narrative ||
+    'No system narrative was attached to this request.';
+  const aiRouteLabel = aiEnabled ? 'Enabled for this request' : 'Held in reserve';
+  const greetingWordLabel = formatOptionalValue(greetingWordFlag?.value);
 
   const heroMetrics: Metric[] = [
     {
@@ -409,18 +420,18 @@ export default function Home() {
 
   const authorityRows: DetailRow[] = [
     {
-      label: 'Authority',
-      note: decision?.reason || 'No explicit routing rationale was attached.',
+      label: 'Source',
+      note: 'The system responsible for selecting the opening word.',
       value: executiveSource,
     },
     {
-      label: 'Execution mode',
-      note: aiEnabled ? 'Feature flag permits AI participation.' : 'The request stayed on the non-AI path.',
-      value: operatingMode,
+      label: 'Decision reason',
+      note: 'The direct explanation returned with the greeting decision.',
+      value: decision?.reason || 'No explicit routing rationale was attached.',
     },
     {
       label: 'Greeting word',
-      note: 'The first half of the enterprise-approved sentence.',
+      note: 'The first half of the final rendered sentence.',
       value: decision?.word || 'Hello',
     },
   ];
@@ -428,76 +439,121 @@ export default function Home() {
   const briefingRows: DetailRow[] = [
     {
       label: 'Confidence',
-      note: 'Confidence is only reported when the AI path is engaged.',
+      note: 'Confidence is only meaningful when the AI path engages.',
       value: confidenceLabel,
     },
     {
-      label: 'Risk posture',
-      note: 'The platform keeps a default managed posture when AI is not involved.',
+      label: 'Risk assessment',
+      note: 'Executive risk posture for the request.',
       value: riskLabel,
     },
     {
-      label: 'Board posture',
-      note: boardPosture,
-      value: aiDecision?._fallback ? 'Fallback active' : 'Primary path',
+      label: 'Board approval',
+      note: 'Board-level direction or fallback note from the decision layer.',
+      value: boardPosture,
+    },
+    {
+      label: 'Fallback',
+      note: 'Whether the final decision was served from fallback logic.',
+      value: formatOptionalValue(aiDecision?._fallback),
     },
   ];
 
   const runtimeRows: DetailRow[] = [
     {
       label: 'Platform status',
-      note: resolvedMetadata.error || 'No frontend fallback was required for this render.',
+      note: 'Overall state of the current frontend render.',
       value: resolvedMetadata.error ? 'Degraded but serving' : 'Nominal',
     },
     {
-      label: 'Feature note',
-      note: aiFlag?.note || 'No additional governance note was supplied.',
-      value: aiEnabled ? 'AI capability enabled' : 'AI capability on standby',
+      label: 'Frontend error',
+      note: 'Fallback surfaces this when the API path is unavailable.',
+      value: resolvedMetadata.error || 'None',
     },
     {
-      label: 'Worth it',
-      note: 'An objective question the platform refuses to answer consistently.',
+      label: 'Was it worth it',
+      note: 'The answer the platform reluctantly provides about itself.',
       value: worthItLabel,
+    },
+    {
+      label: 'Processing time',
+      note: 'End-to-end orchestration duration.',
+      value: `${resolvedMetadata.processingTimeMs ?? 0}ms`,
     },
   ];
 
-  const governanceRows: DetailRow[] = [
+  const aiFlagRows: DetailRow[] = [
     {
-      label: 'AI enabled',
-      note: 'Reflects the live feature-flag decision returned with the request.',
-      value: aiEnabled ? 'Yes' : 'No',
+      label: 'Enabled field',
+      note: 'The raw enabled field returned by the flag payload.',
+      value: formatOptionalValue(aiFlag?.enabled),
     },
     {
-      label: 'Greeting council',
-      note: 'The service currently shaping the first word.',
-      value: executiveSource,
+      label: 'Value field',
+      note: 'The resolved value field used by the frontend decision path.',
+      value: formatOptionalValue(aiFlag?.value),
     },
     {
-      label: 'Teapot status',
-      note: 'Ceremonial exception telemetry remains part of the enterprise contract.',
-      value: teapotStatusLabel,
+      label: 'Rollout',
+      note: 'Configured rollout percentage for AI greeting enablement.',
+      value:
+        aiFlag?.rolloutPercentage === undefined
+          ? 'Unavailable'
+          : `${aiFlag.rolloutPercentage}%`,
+    },
+    {
+      label: 'Note',
+      note: 'Operator note returned alongside the flag evaluation.',
+      value: aiFlag?.note || 'No note attached.',
+    },
+  ];
+
+  const greetingWordRows: DetailRow[] = [
+    {
+      label: 'Enabled field',
+      note: 'The raw enabled field for the greeting word configuration.',
+      value: formatOptionalValue(greetingWordFlag?.enabled),
+    },
+    {
+      label: 'Value field',
+      note: 'The raw selected word or value returned by the flag payload.',
+      value: formatOptionalValue(greetingWordFlag?.value),
+    },
+    {
+      label: 'Rollout',
+      note: 'Configured rollout percentage for the greeting word flag.',
+      value:
+        greetingWordFlag?.rolloutPercentage === undefined
+          ? 'Unavailable'
+          : `${greetingWordFlag.rolloutPercentage}%`,
+    },
+    {
+      label: 'Note',
+      note: 'Operator note returned alongside the greeting word evaluation.',
+      value: greetingWordFlag?.note || 'No note attached.',
     },
   ];
 
   const narrativeRows: DetailRow[] = [
     {
       label: 'Overall mood',
-      note: 'Atmospheric reading from the system narrative.',
+      note: 'Atmospheric readout from the system narrative layer.',
       value: resolvedMetadata.systemNarrative?.overallMood || 'Contained',
     },
     {
       label: 'Hero of the hour',
-      note: 'The service currently perceived as carrying the stack.',
+      note: 'The service presently carrying the stack.',
       value: resolvedMetadata.systemNarrative?.heroOfTheHour || 'No hero declared',
     },
     {
       label: 'Villain of the hour',
-      note: 'The service most likely to appear in the post-incident memo.',
-      value: resolvedMetadata.systemNarrative?.villainOfTheHour || 'No villain declared',
+      note: 'The service most likely to appear in the postmortem.',
+      value:
+        resolvedMetadata.systemNarrative?.villainOfTheHour || 'No villain declared',
     },
     {
       label: 'Quest status',
-      note: 'The current state of our two-word ambition.',
+      note: 'The official state of our two-word mission.',
       value: resolvedMetadata.systemNarrative?.questStatus || 'Steady',
     },
   ];
@@ -505,12 +561,12 @@ export default function Home() {
   const experimentRows: DetailRow[] = [
     {
       label: 'Recommendation',
-      note: 'Experiment guidance for punctuation governance.',
+      note: 'Experiment guidance for punctuation and output policy.',
       value: resolvedMetadata.abAnalysis?.recommendation || 'No recommendation attached',
     },
     {
       label: 'Honesty note',
-      note: 'Statistical humility, when available.',
+      note: 'Statistical humility when the experiment layer offers it.',
       value:
         resolvedMetadata.abAnalysis?.statisticalAnalysis?.honestyNote ||
         'No statistical honesty note available.',
@@ -541,28 +597,19 @@ export default function Home() {
   ];
 
   return (
-    <main className={styles.page}>
+    <main className={cx(styles.page, styles.entering)}>
       <div className={styles.contentWrap}>
         <header className={styles.masthead}>
           <div className={styles.brandLockup}>
             <div className={styles.brandMark}>{'</>'}</div>
             <div>
-              <p className={styles.eyebrow}>HelloWorld Enterprise</p>
-              <h1 className={styles.mastheadTitle}>Greeting Operations Console</h1>
-              <p className={styles.mastheadCopy}>
-                A live executive dashboard for observing how one greeting moves through AI,
-                feature governance, experimentation, and ceremonial teapot protocol.
-              </p>
+              <p className={styles.mastheadLabel}>HelloWorld Enterprise</p>
+              <h1 className={styles.mastheadTitle}>Greeting Intelligence Workspace</h1>
             </div>
           </div>
 
           <div className={styles.signalRail}>
             <StatusBadge label={operatingMode} tone={greetingTone} />
-            <StatusBadge
-              label={aiEnabled ? 'AI flag active' : 'AI flag standby'}
-              tone={aiEnabled ? 'live' : 'neutral'}
-            />
-            <StatusBadge label='Railway backend + Vercel shell' tone='neutral' />
           </div>
         </header>
 
@@ -573,22 +620,24 @@ export default function Home() {
           </div>
         ) : null}
 
-        <section className={styles.heroGrid}>
+        <section className={styles.heroBoard}>
           <section className={styles.heroFrame}>
-            <p className={styles.heroKicker}>Executive outcome</p>
-            <h2 className={styles.heroDisplay}>{resolvedGreeting}</h2>
+            <div className={styles.heroHeaderRow}>
+              <div>
+                <p className={styles.heroKicker}>Live orchestration outcome</p>
+                <h2 className={styles.heroDisplay}>{resolvedGreeting}</h2>
+              </div>
+
+              <div className={styles.heroStamp}>
+                <span className={styles.heroStampLabel}>Routing authority</span>
+                <strong className={styles.heroStampValue}>{executiveSource}</strong>
+              </div>
+            </div>
+
             <p className={styles.heroNarrative}>
               {decision?.reason ||
                 'The greeting pipeline completed its work without generating an official incident.'}
             </p>
-
-            <div className={styles.heroBadgeRow}>
-              <StatusBadge
-                label={`${executiveSource} selected ${decision?.word || 'Hello'}`}
-                tone={greetingTone}
-              />
-              <StatusBadge label={boardPosture} tone='neutral' />
-            </div>
 
             <div className={styles.heroMetricGrid}>
               {heroMetrics.map((metric) => (
@@ -597,162 +646,180 @@ export default function Home() {
             </div>
           </section>
 
-          <aside className={styles.summaryFrame}>
-            <div className={styles.summaryStack}>
-              <div className={styles.summaryLead}>
-                <p className={styles.eyebrow}>Current directive</p>
-                <h3 className={styles.summaryLeadTitle}>Command deck summary</h3>
-                <p className={styles.summaryLeadCopy}>
-                  {showLiveAiPanel
-                    ? 'The platform selected the live Chief Greeting Officer path and returned a fully populated briefing.'
-                    : showAiFallbackPanel
-                      ? 'The platform consulted the AI layer but completed the request using its fallback posture.'
-                      : 'The request completed without requiring live AI escalation, which is both prudent and suspicious.'}
-                </p>
-              </div>
+          <aside className={styles.heroAside}>
+            <article className={styles.asideBlock}>
+              <p className={styles.eyebrow}>Routing summary</p>
+              <h3 className={styles.sidecarTitle}>{executiveSource}</h3>
+              <p className={styles.sidecarText}>{routingSummary}</p>
 
-              <div className={styles.metricGrid}>
-                <MetricTile
-                  label='Authority'
-                  note='The present owner of greeting selection'
-                  value={executiveSource}
-                />
-                <MetricTile
-                  label='Risk posture'
-                  note='Risk summary returned with this request'
-                  value={riskLabel}
-                />
-                <MetricTile
-                  label='Board note'
-                  note='Escalation summary for executive review'
-                  value={aiDecision?._fallback ? 'Fallback active' : 'Primary path'}
-                />
-                <MetricTile
-                  label='Worth it'
-                  note='A recurring governance debate'
-                  value={worthItLabel}
-                />
+              <div className={styles.sidecarStack}>
+                <div className={styles.signalRow}>
+                  <span className={styles.signalLabel}>Authority</span>
+                  <span className={styles.signalValue}>{executiveSource}</span>
+                </div>
+                <div className={styles.signalRow}>
+                  <span className={styles.signalLabel}>Board posture</span>
+                  <span className={styles.signalValue}>{boardPosture}</span>
+                </div>
+                <div className={styles.signalRow}>
+                  <span className={styles.signalLabel}>Risk posture</span>
+                  <span className={styles.signalValue}>{riskLabel}</span>
+                </div>
+                <div className={styles.signalRow}>
+                  <span className={styles.signalLabel}>Worth it</span>
+                  <span className={styles.signalValue}>{worthItLabel}</span>
+                </div>
               </div>
-            </div>
+            </article>
+
+            <article className={styles.asideBlock}>
+              <p className={styles.eyebrow}>Executive brief</p>
+              <p className={styles.cardText}>{briefingNarrative}</p>
+
+              <div className={styles.briefingGrid}>
+                {briefingRows.map((row) => (
+                  <div className={styles.briefingCard} key={row.label}>
+                    <span className={styles.metaLabel}>{row.label}</span>
+                    <span className={styles.briefingValue}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
           </aside>
         </section>
 
-        <section className={styles.dashboardGrid}>
-          <div className={styles.primaryColumn}>
-            <SectionFrame
-              description='Two synchronized views of the same request: who made the decision and how the rationale was framed.'
-              eyebrow='Decision matrix'
-              title='Authority and executive reasoning'
-            >
-              <div className={styles.dualCardGrid}>
-                <article className={styles.signalCard}>
-                  <p className={styles.eyebrow}>Greeting authority</p>
-                  <p className={styles.signalCopy}>
-                    {showLiveAiPanel
-                      ? 'The Chief Greeting Officer path is active and the live model authored the guidance for this request.'
-                      : showAiFallbackPanel
-                        ? 'The Chief Greeting Officer was consulted, but operations fell back to the deterministic posture before final assembly.'
-                        : 'This request stayed on a policy-led or fallback-led route without requiring live executive AI intervention.'}
-                  </p>
-                  <FactList items={authorityRows} />
-                </article>
+        <section className={styles.detailsGrid}>
+          <SectionFrame
+            className={styles.span8}
+            eyebrow='Narrative desk'
+            title='Narrative and experiment brief'
+            description='Atmosphere, experimentation, and interpretive context for the current request.'
+          >
+            <div className={styles.narrativeDeck}>
+              <div className={styles.storyBlock}>
+                <p className={styles.storyQuote}>{narrativeSummary}</p>
 
-                <article className={styles.signalCard}>
-                  <p className={styles.eyebrow}>Briefing package</p>
-                  <p className={styles.signalCopy}>{briefingNarrative}</p>
-                  <FactList items={briefingRows} />
-                </article>
+                <div className={styles.storyMeta}>
+                  {narrativeRows.map((row) => (
+                    <div className={styles.metaRow} key={row.label}>
+                      <span className={styles.metaLabel}>{row.label}</span>
+                      <span className={styles.metaValue}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </SectionFrame>
 
-            <div className={styles.splitGrid}>
-              <SectionFrame
-                description='Operational color commentary for the current request, rendered as if this greeting were a listed company.'
-                eyebrow='System narrative'
-                title='How the platform is feeling today'
-              >
-                <div className={styles.quotePanel}>
-                  <p className={styles.quoteText}>
-                    {resolvedMetadata.systemNarrative?.narrative ||
-                      'No system narrative was attached to this request, which may be the healthiest signal available.'}
-                  </p>
-                  <div className={styles.quoteGrid}>
-                    {narrativeRows.map((row) => (
-                      <MetricTile
-                        key={row.label}
-                        label={row.label}
-                        note={row.note || ''}
-                        value={row.value}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </SectionFrame>
-
-              <SectionFrame
-                description='Experiment telemetry and punctuation governance for the current render.'
-                eyebrow='Experiment brief'
-                title={resolvedMetadata.abAnalysis?.experimentName || 'Punctuation governance'}
-              >
-                <div className={styles.quotePanel}>
-                  <p className={styles.quoteText}>
-                    {resolvedMetadata.abAnalysis?.executiveSummary ||
-                      'This request did not return an explicit experiment summary, so punctuation policy remains in its default posture.'}
-                  </p>
-                  <FactList items={experimentRows} />
-                </div>
-              </SectionFrame>
+              <article className={styles.experimentPanel}>
+                <p className={styles.eyebrow}>Experiment brief</p>
+                <h3 className={styles.inlineTitle}>{experimentTitle}</h3>
+                <p className={styles.cardText}>{experimentSummary}</p>
+                <FactList items={experimentRows} />
+              </article>
             </div>
+          </SectionFrame>
 
+          <div className={cx(styles.span4, styles.railStack)}>
             <SectionFrame
-              description='The payload beneath the velvet rope. Useful for debugging, audits, and proving that the absurdity is measurable.'
-              eyebrow='Observability ledger'
-              title='Runtime evidence'
+              eyebrow='Decision matrix'
+              title='Greeting authority'
+              description='Who made the call and why the route resolved this way.'
             >
-              <div className={styles.observabilityRow}>
-                {observabilityMetrics.map((metric) => (
-                  <MetricTile key={metric.label} {...metric} />
-                ))}
-              </div>
-
-              <details className={styles.drawer}>
-                <summary className={styles.drawerSummary}>Inspect raw orchestration metadata</summary>
-                <pre className={styles.payload}>{JSON.stringify(resolvedMetadata, null, 2)}</pre>
-              </details>
+              <FactList items={authorityRows} />
             </SectionFrame>
-          </div>
 
-          <aside className={styles.secondaryColumn}>
             <SectionFrame
-              className={styles.sidebarCard}
-              description='High-level operating signals for the live request path.'
-              eyebrow='Platform posture'
-              title='Operating mode'
+              eyebrow='Runtime posture'
+              title='Service condition'
+              description='Operational state for the current render path.'
             >
               <FactList items={runtimeRows} />
             </SectionFrame>
+          </div>
 
-            <SectionFrame
-              className={styles.sidebarCard}
-              description='Feature, risk, and ceremonial controls that shape the final output.'
-              eyebrow='Governance signals'
-              title='Flags and protocol'
-            >
-              <FactList items={governanceRows} />
-            </SectionFrame>
-
-            <SectionFrame
-              className={styles.sidebarCard}
-              description='The stack continues to honor the most important status code in enterprise software.'
-              eyebrow='Teapot protocol'
-              title='Ceremonial exception handling'
-            >
-              <div className={styles.teapotPanel}>
-                <StatusBadge label={teapotStatusLabel} tone='policy' />
-                <p className={styles.teapotQuote}>{teapotWisdom}</p>
+          <SectionFrame
+            className={styles.span7}
+            eyebrow='Governance signals'
+            title='Control matrix'
+            description='Feature controls are grouped here instead of being scattered across the page.'
+          >
+            <div className={styles.controlSummary}>
+              <div className={styles.controlChip}>
+                <span className={styles.controlChipLabel}>AI routing</span>
+                <strong className={styles.controlChipValue}>{aiRouteLabel}</strong>
               </div>
-            </SectionFrame>
-          </aside>
+              <div className={styles.controlChip}>
+                <span className={styles.controlChipLabel}>Greeting word</span>
+                <strong className={styles.controlChipValue}>{greetingWordLabel}</strong>
+              </div>
+              <div className={styles.controlChip}>
+                <span className={styles.controlChipLabel}>Rollout</span>
+                <strong className={styles.controlChipValue}>{rolloutLabel}</strong>
+              </div>
+              <div className={styles.controlChip}>
+                <span className={styles.controlChipLabel}>Protocol</span>
+                <strong className={styles.controlChipValue}>{teapotStatusLabel}</strong>
+              </div>
+            </div>
+
+            <div className={styles.controlColumns}>
+              <article className={styles.controlCard}>
+                <h3 className={styles.inlineTitle}>AI greeting enablement</h3>
+                <FactList items={aiFlagRows} />
+              </article>
+
+              <article className={styles.controlCard}>
+                <h3 className={styles.inlineTitle}>Greeting word configuration</h3>
+                <FactList items={greetingWordRows} />
+              </article>
+            </div>
+          </SectionFrame>
+
+          <SectionFrame
+            className={styles.span5}
+            eyebrow='Teapot protocol'
+            title='Ceremonial exception handling'
+            description='The most important status code in enterprise software remains in ceremonial service.'
+          >
+            <div className={styles.teapotPanel}>
+              <div className={styles.teapotHeader}>
+                <StatusBadge label={teapotStatusLabel} tone='policy' />
+                <p className={styles.teapotNarrative}>{topLevelTeapotMusing}</p>
+              </div>
+
+              <FactList
+                items={[
+                  {
+                    label: 'Narrative wisdom',
+                    note: 'Returned by the system narrative layer.',
+                    value: narrativeTeapotWisdom,
+                  },
+                  {
+                    label: 'Dedicated musing',
+                    note: 'Returned by the teapot payload itself.',
+                    value: topLevelTeapotMusing,
+                  },
+                ]}
+              />
+            </div>
+          </SectionFrame>
+
+          <SectionFrame
+            className={styles.span12}
+            eyebrow='Observability ledger'
+            title='Runtime evidence'
+            description='The measurable evidence beneath the front-end polish.'
+          >
+            <div className={styles.observabilityGrid}>
+              {observabilityMetrics.map((metric) => (
+                <MetricTile key={metric.label} {...metric} />
+              ))}
+            </div>
+
+            <details className={styles.drawer}>
+              <summary className={styles.drawerSummary}>Inspect raw orchestration metadata</summary>
+              <pre className={styles.payload}>{JSON.stringify(resolvedMetadata, null, 2)}</pre>
+            </details>
+          </SectionFrame>
         </section>
       </div>
     </main>
