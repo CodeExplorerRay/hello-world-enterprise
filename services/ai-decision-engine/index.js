@@ -17,6 +17,22 @@ const port = Number(process.env.PORT || 8081);
 
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+  res.json({
+    service: "ai-decision-engine",
+    version: "1.0.0",
+    status: "running",
+    endpoints: {
+      health: "/health",
+      decide: "/decide?abVariant=A&greetingCount=0",
+      abAnalysis: "/ab-analysis",
+      statusNarrative: "/status-narrative",
+      promptRegistry: "/prompt-registry"
+    },
+    geminiConfigured: !!process.env.GEMINI_API_KEY
+  });
+});
+
 function buildDecisionContext(req) {
   const input = req.method === "GET" ? req.query : req.body || {};
 
@@ -29,15 +45,24 @@ function buildDecisionContext(req) {
 }
 
 app.get("/decide", async (req, res) => {
-  const decision = await safeGreetingDecision(buildDecisionContext(req));
-  const meta = decision._meta || {};
+  try {
+    const decision = await safeGreetingDecision(buildDecisionContext(req));
+    const meta = decision._meta || {};
 
-  res.json({
-    ...decision,
-    aiModel: meta.model || "emergency-greeting-protocol",
-    disclaimer: "AI was used in the making of this greeting decision.",
-    tokensUsed: meta.tokensUsed || 0,
-  });
+    res.json({
+      ...decision,
+      aiModel: meta.model || "emergency-greeting-protocol",
+      disclaimer: "AI was used in the making of this greeting decision.",
+      tokensUsed: meta.tokensUsed || 0,
+    });
+  } catch (error) {
+    console.error("Error in /decide:", error);
+    res.status(500).json({
+      error: "Decision failed",
+      message: error.message,
+      fallbackGreeting: "Hello"
+    });
+  }
 });
 
 app.get("/ab-analysis", async (_req, res) => {
@@ -66,4 +91,11 @@ app.get("/health", (_req, res) => {
   });
 });
 
-app.listen(port);
+app.listen(port, () => {
+  console.log(`ai-decision-engine listening on port ${port}`);
+  if (process.env.GEMINI_API_KEY) {
+    console.log("Gemini API key configured");
+  } else {
+    console.log("Warning: GEMINI_API_KEY environment variable not set - using fallback mode");
+  }
+});
