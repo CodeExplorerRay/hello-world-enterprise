@@ -255,7 +255,7 @@ async function orchestrateGreeting(payload, env = process.env) {
     ),
     fetchJsonOrFallback(
       buildUrlWithQuery(urls.teapotService, '/health', {}),
-      { acceptableStatuses: [418] },
+      { acceptableStatuses: [200, 418] },
       {
         httpCode: 418,
         message: 'Teapot health check unavailable, but the gateway still believes in teapots.',

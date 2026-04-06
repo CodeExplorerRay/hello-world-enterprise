@@ -35,6 +35,16 @@ async function expectJsonWithStatus(url, label, expectedStatus, options = {}) {
   return readJson(response, label);
 }
 
+async function expectJsonWithAnyStatus(url, label, expectedStatuses, options = {}) {
+  const response = await fetch(url, options);
+
+  if (!expectedStatuses.includes(response.status)) {
+    throw new Error(`${label} expected HTTP ${expectedStatuses.join(" or ")} but got ${response.status}`);
+  }
+
+  return readJson(response, label);
+}
+
 async function testAiDecision() {
   const decision = await expectJson(`${aiBase}/decide?greetingCount=12&lastGreeting=Hello&abVariant=A`, "AI /decide");
 
@@ -88,7 +98,7 @@ async function testStatusNarrative() {
 }
 
 async function testTeapotHealth() {
-  const teapot = await expectJsonWithStatus(`${teapotBase}/health`, "Teapot /health", 418);
+  const teapot = await expectJsonWithAnyStatus(`${teapotBase}/health`, "Teapot /health", [200, 418]);
 
   assert.equal(teapot.httpCode, 418);
   assert.equal(typeof teapot.philosophicalMusing?.musing, "string");

@@ -25,6 +25,7 @@ type TeapotStatus struct {
     Author               string       `json:"rfcAuthor"`
     BrewingStatus        string       `json:"brewingStatus"`
     Dedication           string       `json:"dedication"`
+    HealthCheckStatus    string       `json:"healthCheckStatus"`
     HTTPCode             int          `json:"httpCode"`
     Message              string       `json:"message"`
     PhilosophicalMusing  TeapotMusing `json:"philosophicalMusing"`
@@ -197,26 +198,51 @@ Respond in this JSON format:
     return musing
 }
 
+func writeJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(statusCode)
+    _ = json.NewEncoder(w).Encode(payload)
+}
+
 func main() {
     port := os.Getenv("PORT")
     if strings.TrimSpace(port) == "" {
         port = "8082"
     }
 
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path != "/" {
+            http.NotFound(w, r)
+            return
+        }
+
+        writeJSON(w, http.StatusOK, map[string]interface{}{
+            "service": "teapot-service",
+            "status": "running",
+            "port": port,
+            "endpoints": map[string]string{
+                "health": "/health",
+                "brew": "/brew",
+                "additions": "/brew/additions",
+            },
+            "note": "This teapot is reachable and operational. It still refuses to brew coffee on principle.",
+        })
+    })
+
     http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-        w.WriteHeader(http.StatusTeapot)
-        json.NewEncoder(w).Encode(TeapotStatus{
-            Author:      "Larry Masinter",
+        writeJSON(w, http.StatusOK, TeapotStatus{
+            Author:        "Larry Masinter",
             BrewingStatus: "STEEPING",
-            Dedication:  "This health check is dedicated to Larry Masinter, who gave us the greatest HTTP status code.",
-            HTTPCode:    http.StatusTeapot,
-            Message:     "This service is healthy, but it is a teapot, so it refuses to brew coffee.",
+            Dedication:    "This health check is dedicated to Larry Masinter, who gave us the greatest HTTP status code.",
+            HealthCheckStatus: "healthy",
+            HTTPCode:      http.StatusTeapot,
+            Message:       "This service is healthy. Its ceremonial HTTP 418 identity is reported in the payload so load balancers do not mistake it for downtime.",
             PhilosophicalMusing: getTeapotMusing(r.Context()),
-            RFC:         "RFC 2324 - Hyper Text Coffee Pot Control Protocol",
-            Status:      "I'm a teapot",
-            TeapotModel: "Enterprise CloudTeapot v3.2.1",
-            Timestamp:   time.Now().UTC(),
-            WaterTemp:   "100C (boiling, like our cloud costs)",
+            RFC:          "RFC 2324 - Hyper Text Coffee Pot Control Protocol",
+            Status:       "HTTP 418 (healthy)",
+            TeapotModel:  "Enterprise CloudTeapot v3.2.1",
+            Timestamp:    time.Now().UTC(),
+            WaterTemp:    "100C (boiling, like our cloud costs)",
         })
     })
 
@@ -242,8 +268,7 @@ func main() {
             },
             "note": "None of these work because I'm a teapot.",
         }
-        w.WriteHeader(http.StatusTeapot)
-        json.NewEncoder(w).Encode(additions)
+        writeJSON(w, http.StatusTeapot, additions)
     })
 
     http.ListenAndServe(":"+port, nil)
