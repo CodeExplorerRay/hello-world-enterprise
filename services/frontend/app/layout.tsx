@@ -1,9 +1,29 @@
 import type { Metadata } from 'next'
+import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google'
+import './globals.css'
 
 const faviconVersion = '20260407'
+const sans = IBM_Plex_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700'],
+})
+const mono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  weight: ['400', '500', '600'],
+})
+const display = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-display',
+  weight: ['500', '600', '700'],
+})
 
 export const metadata: Metadata = {
-  title: 'HelloWorld Enterprise',
+  title: {
+    default: 'HelloWorld Enterprise',
+    template: '%s | HelloWorld Enterprise',
+  },
   description: 'The world\'s most over-engineered greeting platform.',
   icons: {
     icon: [
@@ -22,7 +42,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={`${sans.variable} ${mono.variable} ${display.variable}`}>{children}</body>
     </html>
   )
 }
