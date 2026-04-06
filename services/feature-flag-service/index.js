@@ -107,5 +107,13 @@ app.get('/flags/:flagName', async (req, res) => {
   res.json(evaluateFlag(req.params.flagName, context));
 });
 
+app.get('/health', (_req, res) => {
+  res.json({
+    service: 'feature-flag-service',
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 const port = Number(process.env.PORT || 8084);
 app.listen(port);
