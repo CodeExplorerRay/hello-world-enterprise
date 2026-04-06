@@ -1,6 +1,6 @@
 var builder = WebApplication.CreateBuilder(args);
-var port = Environment.GetEnvironmentVariable("CONCATENATION_SERVICE_PORT")
-    ?? Environment.GetEnvironmentVariable("PORT")
+var port = Environment.GetEnvironmentVariable("PORT")
+    ?? Environment.GetEnvironmentVariable("CONCATENATION_SERVICE_PORT")
     ?? "8086";
 
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");

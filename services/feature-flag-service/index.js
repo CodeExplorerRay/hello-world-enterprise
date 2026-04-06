@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const host = process.env.HOST || '0.0.0.0';
 
 function parseRolloutPercentage(value, fallback) {
   const parsed = Number.parseInt(value, 10);
@@ -102,7 +103,40 @@ function evaluateFlag(flagName, context) {
   };
 }
 
-app.get('/flags/:flagName', async (req, res) => {
+function resolvePort() {
+  const configuredPort = process.env.PORT || process.env.FEATURE_FLAG_SERVICE_PORT || '8084';
+  const parsedPort = Number.parseInt(configuredPort, 10);
+
+  if (Number.isNaN(parsedPort) || parsedPort <= 0) {
+    throw new Error(`Invalid feature-flag-service port: ${configuredPort}`);
+  }
+
+  return {
+    port: parsedPort,
+    source: process.env.PORT ? 'PORT' : process.env.FEATURE_FLAG_SERVICE_PORT ? 'FEATURE_FLAG_SERVICE_PORT' : 'default',
+  };
+}
+
+const portConfig = resolvePort();
+const port = portConfig.port;
+
+app.get('/', (_req, res) => {
+  res.json({
+    service: 'feature-flag-service',
+    status: 'running',
+    host,
+    port,
+    portSource: portConfig.source,
+    endpoints: {
+      health: '/health',
+      greetingWord: '/flags/greeting-word',
+      aiGreetingEnabled: '/flags/ai-greeting-enabled',
+    },
+    usage: 'Pass query params like ?userId=alice&locale=en-US&channel=web to evaluate flags.',
+  });
+});
+
+app.get('/flags/:flagName', (req, res) => {
   const context = normalizeContext(req.query);
   res.json(evaluateFlag(req.params.flagName, context));
 });
@@ -111,9 +145,13 @@ app.get('/health', (_req, res) => {
   res.json({
     service: 'feature-flag-service',
     status: 'ok',
+    host,
+    port,
+    portSource: portConfig.source,
     timestamp: new Date().toISOString(),
   });
 });
 
-const port = Number(process.env.PORT || 8084);
-app.listen(port);
+app.listen(port, host, () => {
+  console.log(`feature-flag-service listening on http://${host}:${port}`);
+});
