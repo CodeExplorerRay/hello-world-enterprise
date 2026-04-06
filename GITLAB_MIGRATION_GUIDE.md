@@ -107,12 +107,13 @@ In GitLab project settings → CI/CD → Variables:
 | `GEMINI_API_KEY` | Variable | Gemini API key (optional) |
 
 ### 5. Update Frontend Configuration
-Update `services/frontend/vercel.json` and `services/frontend/netlify.toml`:
+Set `API_GATEWAY_ORIGIN` in both Vercel and Netlify to your live Railway `api-gateway` origin:
 
-Replace `https://your-api-gateway-url` with your Railway API gateway URL:
+```text
+API_GATEWAY_ORIGIN=https://api-gateway.up.railway.app
 ```
-https://api-gateway.up.railway.app
-```
+
+The frontend rewrite already lives in `services/frontend/next.config.js`, so `services/frontend/vercel.json` and `services/frontend/netlify.toml` can stay generic.
 
 ### 6. Deploy
 Push to the `main` branch to trigger the pipeline:
@@ -158,7 +159,7 @@ git push origin main
 
 ### Frontend Deployment Issues
 - Check Vercel/Netlify deployment logs
-- Verify `API_GATEWAY_ORIGIN` environment variable is set
+- Verify `API_GATEWAY_ORIGIN` environment variable is set in the frontend platform you are deploying to
 - Confirm api-gateway service URL is reachable
 
 ## Cost Comparison
