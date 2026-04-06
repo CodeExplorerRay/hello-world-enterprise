@@ -7,7 +7,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://your-api-gateway-url/:splat"
+  to = "https://api-gateway.up.railway.app/:splat"
   status = 200
 
 [build.processing]
