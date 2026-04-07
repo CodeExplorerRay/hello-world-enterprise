@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { startTransition, useEffect, useState } from 'react';
 import styles from './page.module.css';
 
@@ -109,6 +109,18 @@ const loadingStages = [
   'Rendering two words with uncommon seriousness...',
 ];
 
+const serviceChain = [
+  { id: 'gateway', name: 'API Gateway', tech: 'Node' },
+  { id: 'flags', name: 'Feature Flags', tech: 'Node' },
+  { id: 'ai', name: 'AI Decision', tech: 'Gemini' },
+  { id: 'caps', name: 'Capitalization', tech: 'Spring' },
+  { id: 'concat', name: 'Concatenation', tech: '.NET' },
+  { id: 'punct', name: 'Punctuation', tech: 'Rust' },
+  { id: 'teapot', name: 'Teapot Health', tech: 'Go' },
+];
+
+const serviceTechnologyCount = new Set(serviceChain.map((service) => service.tech)).size;
+
 function cx(...classNames: Array<string | false | null | undefined>) {
   return classNames.filter(Boolean).join(' ');
 }
@@ -152,22 +164,10 @@ function isFlagEnabled(value?: boolean | string | null) {
 }
 
 function formatOptionalValue(value?: boolean | string | number | null) {
-  if (value === undefined) {
-    return 'Unavailable';
-  }
-
-  if (value === null) {
-    return 'None';
-  }
-
-  if (typeof value === 'boolean') {
-    return value ? 'True' : 'False';
-  }
-
-  if (value === '') {
-    return 'Empty';
-  }
-
+  if (value === undefined) return 'Unavailable';
+  if (value === null) return 'None';
+  if (typeof value === 'boolean') return value ? 'True' : 'False';
+  if (value === '') return 'Empty';
   return String(value);
 }
 
@@ -257,6 +257,88 @@ function LoadingExperience({ stage }: { stage: string }) {
   );
 }
 
+function ServiceFlowVisualization({
+  architectureDecisionRecordsConsulted,
+  greetingTone,
+  microservicesInvoked,
+  teapotStatus,
+}: {
+  architectureDecisionRecordsConsulted: number;
+  greetingTone: Tone;
+  microservicesInvoked: number;
+  teapotStatus: number;
+}) {
+  const activeCount = Math.max(0, Math.min(microservicesInvoked, serviceChain.length));
+  const isFallback = greetingTone === 'fallback';
+  const isError = activeCount === 0;
+
+  return (
+    <section className={styles.serviceFlowFrame}>
+      <div className={styles.serviceFlowHeader}>
+        <div>
+          <p className={styles.eyebrow}>Service mesh</p>
+          <h2 className={styles.sectionTitle}>Request flow visualization</h2>
+        </div>
+        <span className={styles.serviceFlowCount}>{activeCount} / {serviceChain.length} services</span>
+      </div>
+
+      <div className={styles.serviceFlowNodes}>
+        {serviceChain.map((svc, i) => {
+          const isActive = i < activeCount;
+          const isTeapot = svc.id === 'teapot';
+          const dotClass = isError
+            ? styles.svcDot
+            : isTeapot && isActive
+              ? styles.svcDotSpecial
+              : isActive && isFallback
+                  ? styles.svcDotFallback
+                  : isActive
+                    ? styles.svcDotActive
+                    : styles.svcDot;
+          const nameClass = isActive ? styles.svcNameActive : '';
+          const connectorClass = i < activeCount - 1
+            ? isFallback
+              ? styles.svcConnectorFallback
+              : styles.svcConnectorActive
+            : '';
+
+          return (
+            <Fragment key={svc.id}>
+              <div className={styles.svcNode}>
+                <div className={cx(styles.svcDot, dotClass)} />
+                <span className={cx(styles.svcName, nameClass)}>{svc.name}</span>
+                <span className={styles.svcTech}>{svc.tech}</span>
+              </div>
+              {i < serviceChain.length - 1 && (
+                <div className={cx(styles.svcConnector, connectorClass)} />
+              )}
+            </Fragment>
+          );
+        })}
+      </div>
+
+      <div className={styles.serviceFlowStats}>
+        <div className={styles.flowStat}>
+          <span className={styles.flowStatValue}>{activeCount}</span>
+          <span className={styles.flowStatLabel}>Services invoked</span>
+        </div>
+        <div className={styles.flowStat}>
+          <span className={styles.flowStatValue}>{serviceTechnologyCount}</span>
+          <span className={styles.flowStatLabel}>Technologies involved</span>
+        </div>
+        <div className={styles.flowStat}>
+          <span className={styles.flowStatValue}>{architectureDecisionRecordsConsulted}</span>
+          <span className={styles.flowStatLabel}>ADRs consulted</span>
+        </div>
+        <div className={styles.flowStat}>
+          <span className={styles.flowStatValue} style={{ color: 'var(--rose)' }}>{teapotStatus}</span>
+          <span className={styles.flowStatLabel}>Teapot status</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [greeting, setGreeting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -265,7 +347,7 @@ export default function Home() {
 
   useEffect(() => {
     const controller = new AbortController();
-    let stageIndex = 0;
+    let stageIndex = 1;
     let completionTimer: ReturnType<typeof setTimeout> | undefined;
 
     const stageInterval = setInterval(() => {
@@ -273,54 +355,41 @@ export default function Home() {
       stageIndex += 1;
     }, 700);
 
+    const settleResponse = (
+      nextGreeting: string,
+      nextMetadata: MetadataPayload,
+    ) => {
+      completionTimer = setTimeout(() => {
+        if (controller.signal.aborted) return;
+        clearInterval(stageInterval);
+        startTransition(() => {
+          setGreeting(nextGreeting);
+          setMetadata(nextMetadata);
+          setLoading(false);
+        });
+      }, 1200);
+    };
+
     fetch('/api/greet', { method: 'POST', signal: controller.signal })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
-
         return response.json() as Promise<GreetingApiResponse>;
       })
       .then((data) => {
-        completionTimer = setTimeout(() => {
-          if (controller.signal.aborted) {
-            return;
-          }
-
-          startTransition(() => {
-            setGreeting(data.greeting || 'Hello World!');
-            setMetadata(data.metadata || {});
-            setLoading(false);
-          });
-        }, 1200);
+        settleResponse(data.greeting || 'Hello World!', data.metadata || {});
       })
       .catch((error: unknown) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-
+        if (controller.signal.aborted) return;
         console.error('API fetch failed:', error);
-
-        completionTimer = setTimeout(() => {
-          if (controller.signal.aborted) {
-            return;
-          }
-
-          startTransition(() => {
-            setGreeting('Hello World!');
-            setMetadata(buildFallbackMetadata());
-            setLoading(false);
-          });
-        }, 1200);
+        settleResponse('Hello World!', buildFallbackMetadata());
       });
 
     return () => {
       controller.abort();
       clearInterval(stageInterval);
-
-      if (completionTimer) {
-        clearTimeout(completionTimer);
-      }
+      if (completionTimer) clearTimeout(completionTimer);
     };
   }, []);
 
@@ -350,12 +419,6 @@ export default function Home() {
           ? 'Emergency fallback'
           : 'Deterministic path';
   const executiveSource = humanizeSource(decision?.source);
-  const briefingNarrative =
-    (showLiveAiPanel || showAiFallbackPanel) && aiDecision?.reasoning
-      ? aiDecision.reasoning
-      : aiFlag?.note ||
-        resolvedMetadata.error ||
-        'No AI briefing was attached to this response.';
   const boardPosture =
     aiDecision?.boardApproval || 'No board directive was attached to this request.';
   const confidenceLabel =
@@ -377,13 +440,6 @@ export default function Home() {
   const narrativeTeapotWisdom =
     resolvedMetadata.systemNarrative?.teapotWisdom ||
     'No narrative teapot wisdom was attached.';
-  const routingSummary = showLiveAiPanel
-    ? 'The live Chief Greeting Officer path supplied the final executive recommendation for this request.'
-    : showAiFallbackPanel
-      ? 'The AI layer engaged, then the platform completed the request through its fallback posture.'
-      : greetingTone === 'policy'
-        ? 'The request stayed on a deterministic, policy-governed route without live AI escalation.'
-        : 'The platform completed the greeting using its deterministic baseline posture.';
   const experimentTitle =
     resolvedMetadata.abAnalysis?.experimentName || 'Punctuation governance';
   const experimentSummary =
@@ -433,29 +489,6 @@ export default function Home() {
       label: 'Greeting word',
       note: 'The first half of the final rendered sentence.',
       value: decision?.word || 'Hello',
-    },
-  ];
-
-  const briefingRows: DetailRow[] = [
-    {
-      label: 'Confidence',
-      note: 'Confidence is only meaningful when the AI path engages.',
-      value: confidenceLabel,
-    },
-    {
-      label: 'Risk assessment',
-      note: 'Executive risk posture for the request.',
-      value: riskLabel,
-    },
-    {
-      label: 'Board approval',
-      note: 'Board-level direction or fallback note from the decision layer.',
-      value: boardPosture,
-    },
-    {
-      label: 'Fallback',
-      note: 'Whether the final decision was served from fallback logic.',
-      value: formatOptionalValue(aiDecision?._fallback),
     },
   ];
 
@@ -620,73 +653,42 @@ export default function Home() {
           </div>
         ) : null}
 
-        <section className={styles.heroBoard}>
-          <section className={styles.heroFrame}>
-            <div className={styles.heroHeaderRow}>
-              <div>
-                <p className={styles.heroKicker}>Live orchestration outcome</p>
-                <h2 className={styles.heroDisplay}>{resolvedGreeting}</h2>
-              </div>
-
-              <div className={styles.heroStamp}>
-                <span className={styles.heroStampLabel}>Routing authority</span>
-                <strong className={styles.heroStampValue}>{executiveSource}</strong>
-              </div>
+        <section className={styles.heroFrame}>
+          <div className={styles.heroHeaderRow}>
+            <div>
+              <p className={styles.heroKicker}>Live orchestration outcome</p>
+              <h2 className={styles.heroDisplay}>
+                <span className={styles.heroGlow} />
+                {resolvedGreeting}
+              </h2>
             </div>
 
-            <p className={styles.heroNarrative}>
-              {decision?.reason ||
-                'The greeting pipeline completed its work without generating an official incident.'}
-            </p>
-
-            <div className={styles.heroMetricGrid}>
-              {heroMetrics.map((metric) => (
-                <MetricTile key={metric.label} {...metric} />
-              ))}
+            <div className={styles.heroStamp}>
+              <span className={styles.heroStampLabel}>Routing authority</span>
+              <strong className={styles.heroStampValue}>{executiveSource}</strong>
             </div>
-          </section>
+          </div>
 
-          <aside className={styles.heroAside}>
-            <article className={styles.asideBlock}>
-              <p className={styles.eyebrow}>Routing summary</p>
-              <h3 className={styles.sidecarTitle}>{executiveSource}</h3>
-              <p className={styles.sidecarText}>{routingSummary}</p>
+          <p className={styles.heroNarrative}>
+            {decision?.reason ||
+              'The greeting pipeline completed its work without generating an official incident.'}
+          </p>
 
-              <div className={styles.sidecarStack}>
-                <div className={styles.signalRow}>
-                  <span className={styles.signalLabel}>Authority</span>
-                  <span className={styles.signalValue}>{executiveSource}</span>
-                </div>
-                <div className={styles.signalRow}>
-                  <span className={styles.signalLabel}>Board posture</span>
-                  <span className={styles.signalValue}>{boardPosture}</span>
-                </div>
-                <div className={styles.signalRow}>
-                  <span className={styles.signalLabel}>Risk posture</span>
-                  <span className={styles.signalValue}>{riskLabel}</span>
-                </div>
-                <div className={styles.signalRow}>
-                  <span className={styles.signalLabel}>Worth it</span>
-                  <span className={styles.signalValue}>{worthItLabel}</span>
-                </div>
-              </div>
-            </article>
-
-            <article className={styles.asideBlock}>
-              <p className={styles.eyebrow}>Executive brief</p>
-              <p className={styles.cardText}>{briefingNarrative}</p>
-
-              <div className={styles.briefingGrid}>
-                {briefingRows.map((row) => (
-                  <div className={styles.briefingCard} key={row.label}>
-                    <span className={styles.metaLabel}>{row.label}</span>
-                    <span className={styles.briefingValue}>{row.value}</span>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </aside>
+          <div className={styles.heroMetricGrid}>
+            {heroMetrics.map((metric) => (
+              <MetricTile key={metric.label} {...metric} />
+            ))}
+          </div>
         </section>
+
+        <ServiceFlowVisualization
+          architectureDecisionRecordsConsulted={
+            resolvedMetadata.architectureDecisionRecordsConsulted ?? 47
+          }
+          microservicesInvoked={resolvedMetadata.microservicesInvoked ?? 0}
+          greetingTone={greetingTone}
+          teapotStatus={resolvedMetadata.teapotStatus ?? 418}
+        />
 
         <section className={styles.detailsGrid}>
           <SectionFrame
