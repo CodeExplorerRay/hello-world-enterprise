@@ -1,7 +1,7 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { Fragment, type ReactNode } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import styles from './page.module.css';
 
 type GreetingDecision = {
@@ -70,7 +70,6 @@ type GreetingApiResponse = {
 };
 
 type Tone = 'live' | 'fallback' | 'policy' | 'manual' | 'neutral';
-type RequestMode = 'classic' | 'ai' | 'surprise';
 
 type Metric = {
   label: string;
@@ -120,129 +119,10 @@ const serviceChain = [
   { id: 'teapot', name: 'Teapot Health', tech: 'Go' },
 ];
 
-const rawSnippets = [
-  'print("Hello, World!")',
-  'System.out.println("Hello, World!");',
-  'println!("Hello, World!");',
-  'fmt.Println("Hello, World!")',
-  'Console.WriteLine("Hello, World!");',
-  'console.log("Hello, World!");',
-  'printf("Hello, World!");',
-  'puts "Hello, World!"',
-  'echo "Hello, World!";',
-  'print("Hello, World!")',
-  "SELECT 'Hello, World!';",
-  'Write-Host "Hello, World!"',
-  'IO.puts "Hello, World!"',
-  'std::cout << "Hello World!";',
-  '(display "Hello, World!")',
-  'log("Hello, World!")',
-  '(println "Hello, World!")',
-  '// Greeting pipeline initiated',
-  '# Deploying to 247 edge locations',
-  'fn greet() -> &str { "Hello, World!" }',
-  'func main() { fmt.Print("HW") }',
-  'public class HelloWorld {}',
-  'import { greet } from "./world";',
-  'const greeting = "Hello, World!";',
-  'package main',
-  'module hello_world',
-  'App.get "/hello" do',
-  'GET /api/greet HTTP/1.1',
-  'docker compose up --build',
-  'kubectl apply -f greeting.yaml',
-  'terraform apply -auto-approve',
-];
-
-const snippets = [...rawSnippets, ...rawSnippets];
-const deterministicGreetingRotation = ['hello', 'hi', 'hey', 'greetings', 'salutations'] as const;
-const greetingModeOptions: Array<{
-  description: string;
-  label: string;
-  mode: RequestMode;
-}> = [
-  {
-    mode: 'classic',
-    label: 'Classic hello',
-    description: 'Pin the homepage to Hello World! while still exposing the runtime metadata.',
-  },
-  {
-    mode: 'ai',
-    label: 'Ask the AI',
-    description: 'Let the Chief Greeting Officer choose the word and explain the decision in metadata.',
-  },
-  {
-    mode: 'surprise',
-    label: 'Surprise me',
-    description: 'Use a deterministic daily rotation so the greeting changes without becoming flaky.',
-  },
-];
+const serviceTechnologyCount = new Set(serviceChain.map((service) => service.tech)).size;
 
 function cx(...classNames: Array<string | false | null | undefined>) {
   return classNames.filter(Boolean).join(' ');
-}
-
-function getUtcDayOfYear(date: Date) {
-  const start = Date.UTC(date.getUTCFullYear(), 0, 0);
-  const current = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-  return Math.floor((current - start) / 86400000);
-}
-
-function buildRotationSeed(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function getDeterministicGreeting(date: Date) {
-  const dayOfYear = Math.max(getUtcDayOfYear(date) - 1, 0);
-  return deterministicGreetingRotation[dayOfYear % deterministicGreetingRotation.length];
-}
-
-function buildGreetingRequest(mode: RequestMode, now = new Date()) {
-  const basePayload = {
-    channel: 'web',
-    locale: 'en-US',
-    recipient: 'World',
-  };
-
-  if (mode === 'classic') {
-    return {
-      mode,
-      payload: {
-        ...basePayload,
-        preferredGreeting: 'hello',
-        userId: 'homepage-classic',
-      },
-      rotationSeed: null,
-      rotationWord: null,
-    };
-  }
-
-  if (mode === 'ai') {
-    return {
-      mode,
-      payload: {
-        ...basePayload,
-        preferredGreeting: 'auto',
-        userId: 'homepage-ai',
-      },
-      rotationSeed: null,
-      rotationWord: null,
-    };
-  }
-
-  const rotationSeed = buildRotationSeed(now);
-  const rotationWord = getDeterministicGreeting(now);
-
-  return {
-    mode,
-    payload: {
-      ...basePayload,
-      preferredGreeting: rotationWord,
-      userId: `homepage-rotation-${rotationSeed}`,
-    },
-    rotationSeed,
-    rotationWord,
-  };
 }
 
 function humanizeSource(source?: string) {
@@ -256,7 +136,7 @@ function humanizeSource(source?: string) {
     case 'gateway-fallback':
       return 'Gateway Emergency Protocol';
     case 'user-input':
-      return 'Explicit homepage mode';
+      return 'Direct User Request';
     default:
       return 'Greeting Governance Layer';
   }
@@ -361,7 +241,6 @@ function SectionFrame({ children, className, description, eyebrow, title }: Sect
 function LoadingExperience({ stage }: { stage: string }) {
   return (
     <main className={styles.loadingPage}>
-      <HelloWorldBackground />
       <section className={styles.loadingPanel}>
         <div className={styles.loadingOrb}>{'</>'}</div>
         <p className={styles.loadingEyebrow}>HelloWorld Enterprise</p>
@@ -378,26 +257,18 @@ function LoadingExperience({ stage }: { stage: string }) {
   );
 }
 
-function HelloWorldBackground() {
-  return (
-    <div className={styles.codeBg} aria-hidden="true">
-      {snippets.map((snippet, i) => (
-        <span
-          key={i}
-          className={cx(
-            styles.codeSnippet,
-            i % 7 === 0 ? styles.codeSnippetFeatured : ''
-          )}
-        >
-          {snippet}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ServiceFlowVisualization({ microservicesInvoked, greetingTone }: { microservicesInvoked: number; greetingTone: Tone }) {
-  const activeCount = microservicesInvoked || 0;
+function ServiceFlowVisualization({
+  architectureDecisionRecordsConsulted,
+  greetingTone,
+  microservicesInvoked,
+  teapotStatus,
+}: {
+  architectureDecisionRecordsConsulted: number;
+  greetingTone: Tone;
+  microservicesInvoked: number;
+  teapotStatus: number;
+}) {
+  const activeCount = Math.max(0, Math.min(microservicesInvoked, serviceChain.length));
   const isFallback = greetingTone === 'fallback';
   const isError = activeCount === 0;
 
@@ -406,9 +277,7 @@ function ServiceFlowVisualization({ microservicesInvoked, greetingTone }: { micr
       <div className={styles.serviceFlowHeader}>
         <div>
           <p className={styles.eyebrow}>Service mesh</p>
-          <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--t0)', margin: 0, letterSpacing: '-0.01em' }}>
-            Request flow visualization
-          </h2>
+          <h2 className={styles.sectionTitle}>Request flow visualization</h2>
         </div>
         <span className={styles.serviceFlowCount}>{activeCount} / {serviceChain.length} services</span>
       </div>
@@ -419,22 +288,22 @@ function ServiceFlowVisualization({ microservicesInvoked, greetingTone }: { micr
           const isTeapot = svc.id === 'teapot';
           const dotClass = isError
             ? styles.svcDot
-            : isTeapot
+            : isTeapot && isActive
               ? styles.svcDotSpecial
-              : isActive && !isFallback
-                ? styles.svcDotActive
-                : isActive && isFallback
+              : isActive && isFallback
                   ? styles.svcDotFallback
-                  : styles.svcDot;
+                  : isActive
+                    ? styles.svcDotActive
+                    : styles.svcDot;
           const nameClass = isActive ? styles.svcNameActive : '';
-          const connectorClass = isActive
+          const connectorClass = i < activeCount - 1
             ? isFallback
               ? styles.svcConnectorFallback
               : styles.svcConnectorActive
             : '';
 
           return (
-            <div key={svc.id} style={{ display: 'contents' }}>
+            <Fragment key={svc.id}>
               <div className={styles.svcNode}>
                 <div className={cx(styles.svcDot, dotClass)} />
                 <span className={cx(styles.svcName, nameClass)}>{svc.name}</span>
@@ -443,7 +312,7 @@ function ServiceFlowVisualization({ microservicesInvoked, greetingTone }: { micr
               {i < serviceChain.length - 1 && (
                 <div className={cx(styles.svcConnector, connectorClass)} />
               )}
-            </div>
+            </Fragment>
           );
         })}
       </div>
@@ -454,15 +323,15 @@ function ServiceFlowVisualization({ microservicesInvoked, greetingTone }: { micr
           <span className={styles.flowStatLabel}>Services invoked</span>
         </div>
         <div className={styles.flowStat}>
-          <span className={styles.flowStatValue}>4</span>
-          <span className={styles.flowStatLabel}>Languages used</span>
+          <span className={styles.flowStatValue}>{serviceTechnologyCount}</span>
+          <span className={styles.flowStatLabel}>Technologies involved</span>
         </div>
         <div className={styles.flowStat}>
-          <span className={styles.flowStatValue}>47</span>
+          <span className={styles.flowStatValue}>{architectureDecisionRecordsConsulted}</span>
           <span className={styles.flowStatLabel}>ADRs consulted</span>
         </div>
         <div className={styles.flowStat}>
-          <span className={styles.flowStatValue} style={{ color: 'var(--rose)' }}>418</span>
+          <span className={styles.flowStatValue} style={{ color: 'var(--rose)' }}>{teapotStatus}</span>
           <span className={styles.flowStatLabel}>Teapot status</span>
         </div>
       </div>
@@ -475,100 +344,52 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState(loadingStages[0]);
   const [metadata, setMetadata] = useState<MetadataPayload | null>(null);
-  const [requestMode, setRequestMode] = useState<RequestMode>('classic');
-  const [rotationSeed, setRotationSeed] = useState<string | null>(null);
-  const [rotationWord, setRotationWord] = useState<string | null>(null);
-  const [refreshingMode, setRefreshingMode] = useState<RequestMode | null>(null);
-  const requestControllerRef = useRef<AbortController | null>(null);
-
-  async function loadGreeting(mode: RequestMode, options?: { initial?: boolean }) {
-    const isInitial = Boolean(options?.initial);
-    const controller = new AbortController();
-    const request = buildGreetingRequest(mode);
-
-    requestControllerRef.current?.abort();
-    requestControllerRef.current = controller;
-
-    if (isInitial) {
-      setLoading(true);
-      setLoadingStage('Re-centering on the canonical Hello World posture...');
-    } else {
-      setRefreshingMode(mode);
-    }
-
-    try {
-      const response = await fetch('/api/greet', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request.payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json() as GreetingApiResponse;
-
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      startTransition(() => {
-        setGreeting(data.greeting || 'Hello World!');
-        setMetadata(data.metadata || {});
-        setRequestMode(mode);
-        setRotationSeed(request.rotationSeed);
-        setRotationWord(request.rotationWord);
-        setLoading(false);
-      });
-    } catch (error: unknown) {
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      console.error('API fetch failed:', error);
-
-      startTransition(() => {
-        setGreeting('Hello World!');
-        setMetadata(buildFallbackMetadata());
-        setRequestMode(mode);
-        setRotationSeed(request.rotationSeed);
-        setRotationWord(request.rotationWord);
-        setLoading(false);
-      });
-    } finally {
-      if (requestControllerRef.current === controller) {
-        requestControllerRef.current = null;
-      }
-      if (!controller.signal.aborted) {
-        setRefreshingMode(null);
-      }
-    }
-  }
 
   useEffect(() => {
-    let stageIndex = 0;
-    if (!loading) {
-      return undefined;
-    }
+    const controller = new AbortController();
+    let stageIndex = 1;
+    let completionTimer: ReturnType<typeof setTimeout> | undefined;
 
     const stageInterval = setInterval(() => {
       setLoadingStage(loadingStages[stageIndex % loadingStages.length]);
       stageIndex += 1;
     }, 700);
 
-    return () => {
-      clearInterval(stageInterval);
+    const settleResponse = (
+      nextGreeting: string,
+      nextMetadata: MetadataPayload,
+    ) => {
+      completionTimer = setTimeout(() => {
+        if (controller.signal.aborted) return;
+        clearInterval(stageInterval);
+        startTransition(() => {
+          setGreeting(nextGreeting);
+          setMetadata(nextMetadata);
+          setLoading(false);
+        });
+      }, 1200);
     };
-  }, [loading]);
 
-  useEffect(() => {
-    void loadGreeting('classic', { initial: true });
+    fetch('/api/greet', { method: 'POST', signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json() as Promise<GreetingApiResponse>;
+      })
+      .then((data) => {
+        settleResponse(data.greeting || 'Hello World!', data.metadata || {});
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        console.error('API fetch failed:', error);
+        settleResponse('Hello World!', buildFallbackMetadata());
+      });
+
     return () => {
-      requestControllerRef.current?.abort();
+      controller.abort();
+      clearInterval(stageInterval);
+      if (completionTimer) clearTimeout(completionTimer);
     };
   }, []);
 
@@ -583,18 +404,6 @@ export default function Home() {
   const aiFlag = resolvedMetadata.featureFlags?.aiGreetingEnabled;
   const greetingWordFlag = resolvedMetadata.featureFlags?.greetingWord;
   const greetingTone = sourceTone(decision?.source);
-  const modeLabel =
-    requestMode === 'classic'
-      ? 'Classic hello'
-      : requestMode === 'ai'
-        ? 'AI spotlight'
-        : 'Daily surprise';
-  const modeDescription =
-    requestMode === 'classic'
-      ? 'Homepage default is pinned to Hello World! while the rest of the system keeps reporting its metadata.'
-      : requestMode === 'ai'
-        ? 'The Chief Greeting Officer is deciding the opening word and recording the reasoning below.'
-        : `Deterministic rotation for ${rotationSeed ?? 'today'} resolved to "${rotationWord ?? 'hello'}" before the backend ran the rest of the pipeline.`;
   const aiEnabled = isFlagEnabled(aiFlag?.value);
   const showLiveAiPanel =
     decision?.source === 'ai-decision-engine' && aiDecision && !aiDecision._fallback;
@@ -659,9 +468,9 @@ export default function Home() {
       value: rolloutLabel,
     },
     {
-      label: 'Homepage mode',
-      note: 'The current greeting selection mode',
-      value: modeLabel,
+      label: 'Microservices',
+      note: 'Participating systems',
+      value: String(resolvedMetadata.microservicesInvoked ?? 0),
     },
   ];
 
@@ -680,29 +489,6 @@ export default function Home() {
       label: 'Greeting word',
       note: 'The first half of the final rendered sentence.',
       value: decision?.word || 'Hello',
-    },
-  ];
-
-  const briefingRows: DetailRow[] = [
-    {
-      label: 'Confidence',
-      note: 'Confidence is only meaningful when the AI path engages.',
-      value: confidenceLabel,
-    },
-    {
-      label: 'Risk assessment',
-      note: 'Executive risk posture for the request.',
-      value: riskLabel,
-    },
-    {
-      label: 'Board approval',
-      note: 'Board-level direction or fallback note from the decision layer.',
-      value: boardPosture,
-    },
-    {
-      label: 'Fallback',
-      note: 'Whether the final decision was served from fallback logic.',
-      value: formatOptionalValue(aiDecision?._fallback),
     },
   ];
 
@@ -845,7 +631,6 @@ export default function Home() {
 
   return (
     <main className={cx(styles.page, styles.entering)}>
-      <HelloWorldBackground />
       <div className={styles.contentWrap}>
         <header className={styles.masthead}>
           <div className={styles.brandLockup}>
@@ -885,42 +670,9 @@ export default function Home() {
           </div>
 
           <p className={styles.heroNarrative}>
-            {modeDescription}
+            {decision?.reason ||
+              'The greeting pipeline completed its work without generating an official incident.'}
           </p>
-
-          <div className={styles.modeBar}>
-            <div className={styles.modeButtonRow}>
-              {greetingModeOptions.map((option) => {
-                const isActive = requestMode === option.mode;
-                const isPending = refreshingMode === option.mode;
-
-                return (
-                  <button
-                    key={option.mode}
-                    type='button'
-                    className={cx(styles.modeButton, isActive && styles.modeButtonActive)}
-                    disabled={Boolean(refreshingMode)}
-                    onClick={() => {
-                      void loadGreeting(option.mode);
-                    }}
-                  >
-                    <span className={styles.modeButtonLabel}>{option.label}</span>
-                    <span className={styles.modeButtonText}>
-                      {isPending ? 'Refreshing...' : option.description}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className={styles.modeMeta}>
-              <span className={styles.modeMetaLabel}>Current mode</span>
-              <strong className={styles.modeMetaValue}>{modeLabel}</strong>
-              {requestMode === 'surprise' && rotationSeed ? (
-                <span className={styles.modeMetaHint}>Seeded by {rotationSeed}</span>
-              ) : null}
-            </div>
-          </div>
 
           <div className={styles.heroMetricGrid}>
             {heroMetrics.map((metric) => (
@@ -930,8 +682,12 @@ export default function Home() {
         </section>
 
         <ServiceFlowVisualization
+          architectureDecisionRecordsConsulted={
+            resolvedMetadata.architectureDecisionRecordsConsulted ?? 47
+          }
           microservicesInvoked={resolvedMetadata.microservicesInvoked ?? 0}
           greetingTone={greetingTone}
+          teapotStatus={resolvedMetadata.teapotStatus ?? 418}
         />
 
         <section className={styles.detailsGrid}>
