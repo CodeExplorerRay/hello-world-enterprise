@@ -283,6 +283,60 @@
   z-index: 1;
 }
 
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 28px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+.heroAction {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--accent-border);
+  background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(15,23,42,0.86));
+  color: var(--t1);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.14);
+}
+
+.heroAction:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(15,23,42,0.94));
+  color: var(--t0);
+}
+
+.heroAction:disabled {
+  opacity: 0.68;
+  cursor: wait;
+  transform: none;
+}
+
+.heroActionNote {
+  margin: 0;
+  max-width: 480px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--t4);
+}
+
 .heroMetricGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -295,6 +349,8 @@
   .heroMetricGrid { grid-template-columns: repeat(2, 1fr); }
   .heroFrame { padding: 32px 24px 24px; }
   .heroHeaderRow { flex-direction: column; gap: 20px; }
+  .heroActions { align-items: flex-start; }
+  .heroAction { width: 100%; justify-content: center; }
 }
 
 /* ========== METRIC TILE ========== */
