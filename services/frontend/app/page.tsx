@@ -1,6 +1,7 @@
 'use client';
 
-import { Fragment, startTransition, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import styles from './page.module.css';
 
 type GreetingDecision = {
@@ -10,8 +11,6 @@ type GreetingDecision = {
 };
 
 type FeatureFlag = {
-  approvedBy?: string;
-  changeRequestId?: string;
   enabled?: boolean;
   note?: string;
   rolloutPercentage?: number;
@@ -71,7 +70,6 @@ type GreetingApiResponse = {
 };
 
 type Tone = 'live' | 'fallback' | 'policy' | 'manual' | 'neutral';
-type RequestMode = 'canonical' | 'ai-preview';
 
 type Metric = {
   label: string;
@@ -138,7 +136,7 @@ function humanizeSource(source?: string) {
     case 'gateway-fallback':
       return 'Gateway Emergency Protocol';
     case 'user-input':
-      return 'Canonical Homepage Policy';
+      return 'Direct User Request';
     default:
       return 'Greeting Governance Layer';
   }
@@ -155,7 +153,7 @@ function sourceTone(source?: string): Tone {
     case 'gateway-fallback':
       return 'fallback';
     case 'user-input':
-      return 'policy';
+      return 'manual';
     default:
       return 'neutral';
   }
@@ -346,96 +344,52 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState(loadingStages[0]);
   const [metadata, setMetadata] = useState<MetadataPayload | null>(null);
-  const [requestMode, setRequestMode] = useState<RequestMode>('canonical');
-  const [refreshingMode, setRefreshingMode] = useState<RequestMode | null>(null);
-  const requestControllerRef = useRef<AbortController | null>(null);
-  const loadingStageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  async function requestGreeting(mode: RequestMode, options?: { initial?: boolean }) {
-    const isInitial = Boolean(options?.initial);
-    const controller = new AbortController();
-    const payload = {
-      channel: 'web',
-      locale: 'en-US',
-      preferredGreeting: mode === 'canonical' ? 'hello' : 'auto',
-      recipient: 'World',
-      userId: mode === 'canonical' ? 'homepage-canonical' : 'homepage-ai-preview',
-    };
-
-    requestControllerRef.current?.abort();
-    requestControllerRef.current = controller;
-
-    if (!isInitial) {
-      setRefreshingMode(mode);
-    }
-
-    try {
-      const response = await fetch('/api/greet', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json() as GreetingApiResponse;
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      startTransition(() => {
-        setGreeting(data.greeting || 'Hello World!');
-        setMetadata(data.metadata || {});
-        setRequestMode(mode);
-        setLoading(false);
-      });
-    } catch (error: unknown) {
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      console.error('API fetch failed:', error);
-      startTransition(() => {
-        setGreeting('Hello World!');
-        setMetadata(buildFallbackMetadata());
-        setRequestMode(mode);
-        setLoading(false);
-      });
-    } finally {
-      if (loadingStageIntervalRef.current) {
-        clearInterval(loadingStageIntervalRef.current);
-        loadingStageIntervalRef.current = null;
-      }
-      if (requestControllerRef.current === controller) {
-        requestControllerRef.current = null;
-      }
-      if (!controller.signal.aborted) {
-        setRefreshingMode(null);
-      }
-    }
-  }
 
   useEffect(() => {
+    const controller = new AbortController();
     let stageIndex = 1;
+    let completionTimer: ReturnType<typeof setTimeout> | undefined;
 
-    loadingStageIntervalRef.current = setInterval(() => {
+    const stageInterval = setInterval(() => {
       setLoadingStage(loadingStages[stageIndex % loadingStages.length]);
       stageIndex += 1;
     }, 700);
 
-    void requestGreeting('canonical', { initial: true });
+    const settleResponse = (
+      nextGreeting: string,
+      nextMetadata: MetadataPayload,
+    ) => {
+      completionTimer = setTimeout(() => {
+        if (controller.signal.aborted) return;
+        clearInterval(stageInterval);
+        startTransition(() => {
+          setGreeting(nextGreeting);
+          setMetadata(nextMetadata);
+          setLoading(false);
+        });
+      }, 1200);
+    };
+
+    fetch('/api/greet', { method: 'POST', signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json() as Promise<GreetingApiResponse>;
+      })
+      .then((data) => {
+        settleResponse(data.greeting || 'Hello World!', data.metadata || {});
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        console.error('API fetch failed:', error);
+        settleResponse('Hello World!', buildFallbackMetadata());
+      });
 
     return () => {
-      requestControllerRef.current?.abort();
-      if (loadingStageIntervalRef.current) {
-        clearInterval(loadingStageIntervalRef.current);
-        loadingStageIntervalRef.current = null;
-      }
+      controller.abort();
+      clearInterval(stageInterval);
+      if (completionTimer) clearTimeout(completionTimer);
     };
   }, []);
 
@@ -455,32 +409,22 @@ export default function Home() {
     decision?.source === 'ai-decision-engine' && aiDecision && !aiDecision._fallback;
   const showAiFallbackPanel =
     decision?.source === 'ai-decision-engine-fallback' && aiDecision;
-  const operatingMode = requestMode === 'canonical'
-    ? 'Compliance-approved baseline'
-    : showLiveAiPanel
-      ? 'Live AI routing'
-      : showAiFallbackPanel
-        ? 'Fallback AI routing'
-        : greetingTone === 'policy'
-          ? 'Policy-governed path'
-          : resolvedMetadata.error
-            ? 'Emergency fallback'
-            : 'AI preview';
+  const operatingMode = showLiveAiPanel
+    ? 'Live AI routing'
+    : showAiFallbackPanel
+      ? 'Fallback AI routing'
+      : greetingTone === 'policy'
+        ? 'Policy-governed path'
+        : resolvedMetadata.error
+          ? 'Emergency fallback'
+          : 'Deterministic path';
   const executiveSource = humanizeSource(decision?.source);
-  const heroNarrative = requestMode === 'canonical'
-    ? 'The homepage intentionally opens on the canonical Hello World baseline because it is the lowest-risk, board-friendly greeting. AI routing stays visible in the governance panels and can be previewed on demand without changing the approved default.'
-    : decision?.reason ||
-      'The AI preview completed without returning an explicit routing rationale.';
   const boardPosture =
-    requestMode === 'canonical'
-      ? 'Yes. Canonical Hello World is the continuity-plan greeting and remains approved for first render.'
-      : aiDecision?.boardApproval || 'No board directive was attached to this request.';
+    aiDecision?.boardApproval || 'No board directive was attached to this request.';
   const confidenceLabel =
     showLiveAiPanel || showAiFallbackPanel ? `${aiDecision?.confidence ?? 0}%` : 'N/A';
   const riskLabel =
-    requestMode === 'canonical'
-      ? 'Low'
-      : showLiveAiPanel || showAiFallbackPanel
+    showLiveAiPanel || showAiFallbackPanel
       ? aiDecision?.riskAssessment || 'Managed'
       : 'Managed';
   const worthItLabel =
@@ -506,32 +450,6 @@ export default function Home() {
     'No system narrative was attached to this request.';
   const aiRouteLabel = aiEnabled ? 'Enabled for this request' : 'Held in reserve';
   const greetingWordLabel = formatOptionalValue(greetingWordFlag?.value);
-  const approvalAuthority =
-    greetingWordFlag?.approvedBy ||
-    aiFlag?.approvedBy ||
-    'Mock Architecture Review Board';
-  const changeRequestLabel =
-    greetingWordFlag?.changeRequestId ||
-    aiFlag?.changeRequestId ||
-    'Unavailable';
-  const teapotComplianceLabel =
-    (resolvedMetadata.teapotStatus ?? 418) === 418
-      ? 'RFC 2324 aligned'
-      : 'Protocol drift detected';
-  const complianceStatus = requestMode === 'canonical'
-    ? 'Approved'
-    : showLiveAiPanel || showAiFallbackPanel
-      ? 'Conditional review'
-      : resolvedMetadata.error
-        ? 'Fallback controls'
-        : 'Governed';
-  const actionLabel = requestMode === 'canonical'
-    ? 'Preview live AI routing'
-    : 'Restore canonical Hello World';
-  const actionMode: RequestMode = requestMode === 'canonical' ? 'ai-preview' : 'canonical';
-  const actionNote = requestMode === 'canonical'
-    ? 'This runs one live AI-selected request without changing the approved homepage baseline.'
-    : 'Return to the intentionally boring baseline that judges will see first.';
 
   const heroMetrics: Metric[] = [
     {
@@ -649,36 +567,6 @@ export default function Home() {
     },
   ];
 
-  const complianceRows: DetailRow[] = [
-    {
-      label: 'Compliance posture',
-      note: 'How the homepage should be interpreted from a governance standpoint.',
-      value: requestMode === 'canonical'
-        ? 'Approved baseline for first render'
-        : 'Preview mode with discretionary AI involvement',
-    },
-    {
-      label: 'Approval authority',
-      note: 'The authority currently backing the greeting control path.',
-      value: approvalAuthority,
-    },
-    {
-      label: 'Change request',
-      note: 'Mock governance ticket associated with the active control set.',
-      value: changeRequestLabel,
-    },
-    {
-      label: 'Risk posture',
-      note: 'The currently reported or inferred operational risk for this mode.',
-      value: riskLabel,
-    },
-    {
-      label: 'Standards check',
-      note: 'Ceremonial teapot protocol doubles as a standards sanity check.',
-      value: teapotComplianceLabel,
-    },
-  ];
-
   const narrativeRows: DetailRow[] = [
     {
       label: 'Overall mood',
@@ -782,22 +670,9 @@ export default function Home() {
           </div>
 
           <p className={styles.heroNarrative}>
-            {heroNarrative}
+            {decision?.reason ||
+              'The greeting pipeline completed its work without generating an official incident.'}
           </p>
-
-          <div className={styles.heroActions}>
-            <button
-              type='button'
-              className={styles.heroAction}
-              disabled={Boolean(refreshingMode)}
-              onClick={() => {
-                void requestGreeting(actionMode);
-              }}
-            >
-              {refreshingMode === actionMode ? 'Refreshing...' : actionLabel}
-            </button>
-            <p className={styles.heroActionNote}>{actionNote}</p>
-          </div>
 
           <div className={styles.heroMetricGrid}>
             {heroMetrics.map((metric) => (
@@ -865,9 +740,9 @@ export default function Home() {
 
           <SectionFrame
             className={styles.span7}
-            eyebrow='Governance and compliance'
-            title='Control and compliance matrix'
-            description='Feature controls and compliance evidence are grouped here instead of being scattered across the page.'
+            eyebrow='Governance signals'
+            title='Control matrix'
+            description='Feature controls are grouped here instead of being scattered across the page.'
           >
             <div className={styles.controlSummary}>
               <div className={styles.controlChip}>
@@ -886,10 +761,6 @@ export default function Home() {
                 <span className={styles.controlChipLabel}>Protocol</span>
                 <strong className={styles.controlChipValue}>{teapotStatusLabel}</strong>
               </div>
-              <div className={styles.controlChip}>
-                <span className={styles.controlChipLabel}>Compliance</span>
-                <strong className={styles.controlChipValue}>{complianceStatus}</strong>
-              </div>
             </div>
 
             <div className={styles.controlColumns}>
@@ -901,11 +772,6 @@ export default function Home() {
               <article className={styles.controlCard}>
                 <h3 className={styles.inlineTitle}>Greeting word configuration</h3>
                 <FactList items={greetingWordRows} />
-              </article>
-
-              <article className={styles.controlCard}>
-                <h3 className={styles.inlineTitle}>Compliance evidence</h3>
-                <FactList items={complianceRows} />
               </article>
             </div>
           </SectionFrame>
