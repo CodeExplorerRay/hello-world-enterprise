@@ -483,10 +483,7 @@ components:
       type: apiKey
       in: header
       name: X-API-Key
-      description: Optional API key for authenticated requests
-
-security:
-  - ApiKeyAuth: []
+      description: Optional API key. The gateway enforces this header only when `API_GATEWAY_API_KEY` is configured in the runtime environment.
 
 externalDocs:
   description: Find out more about HelloWorld Enterprise

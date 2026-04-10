@@ -2,10 +2,30 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const { buildEmergencyGreetingResponse, orchestrateGreeting } = require('./greeting-orchestrator');
+const {
+  buildCorsOptions,
+  isApiKeyAuthorized,
+  isApiKeyProtectionEnabled,
+} = require('./security-config');
 
-// Enable CORS for all routes
-app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  if (req.secure || req.get('x-forwarded-proto') === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
+  next();
+});
+
+app.use(cors(buildCorsOptions(process.env)));
+app.use(express.json({ limit: '16kb' }));
 
 // Trust proxy (Railway load balancer sets X-Forwarded-For)
 app.set('trust proxy', 1);
@@ -21,6 +41,24 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS' || !req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  if (!isApiKeyProtectionEnabled(process.env)) {
+    return next();
+  }
+
+  if (isApiKeyAuthorized(req.get('x-api-key'), process.env)) {
+    return next();
+  }
+
+  return res.status(401).json({
+    error: 'Unauthorized',
+    message: 'A valid X-API-Key header is required for this environment.',
+  });
+});
 
 app.get('/', (_req, res) => {
   res.json({
@@ -57,6 +95,17 @@ async function handleGreet(req, res) {
 
 app.get('/api/greet', handleGreet);
 app.post('/api/greet', handleGreet);
+
+app.use((error, _req, res, next) => {
+  if (error && error.message === 'Origin not allowed by API gateway CORS policy.') {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: error.message,
+    });
+  }
+
+  return next(error);
+});
 
 const port = Number(process.env.PORT || 8080);
 app.listen(port, () => {
