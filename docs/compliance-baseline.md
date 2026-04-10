@@ -6,7 +6,7 @@ This repository implements a practical production-grade baseline for a small pub
 
 - Source control excludes local secrets, dependency directories, and build outputs.
 - `scripts/compliance-check.js` blocks tracked or unignored `.env`, `node_modules`, `.next`, and common secret patterns.
-- GitHub and GitLab validation jobs run syntax checks plus the repository compliance check.
+- GitHub and GitLab validation jobs are opt-in/manual to avoid surprise CI billing, and they run syntax checks plus the repository compliance check when enabled.
 - `SECURITY.md` defines vulnerability reporting expectations and incident handling guidance.
 
 ## Application Controls
@@ -33,6 +33,6 @@ This repository implements a practical production-grade baseline for a small pub
 
 - Enable provider-native secret scanning and dependency scanning in the hosting organization.
 - Review and rotate production secrets on staff changes, suspected exposure, or vendor key rollover.
-- Protect production branches with reviews and required checks before merging.
+- Protect production branches with reviews and required checks before merging when a billing-approved CI runner is available.
 - Keep deployment credentials out of local `.env` files whenever a managed secret store is available.
 - Capture incident records under `INCIDENT_REPORTS/` or the team incident tracker after material events.

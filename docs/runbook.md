@@ -64,7 +64,7 @@ This runbook provides operational procedures for maintaining the HelloWorld Ente
 - **Error Count**: Alert on > 5/minute
 
 #### Business Metrics
-- **Monthly Cost**: Target $0 on free tiers
+- **Monthly Cost**: Monitor actual provider usage and billing alerts
 - **Token Usage**: Monitor Gemini API costs
 - **User Satisfaction**: Still impossible to measure
 
@@ -244,9 +244,9 @@ curl -fsS https://<your-api-gateway>.up.railway.app/api/greet
 ### Capacity Planning
 
 #### Current Capacity
-- Free-tier oriented backend on Railway
+- Billing-aware backend on Railway
 - Frontend on Vercel
-- Practical target cost: $0/month
+- Practical target cost: within the approved provider budget
 
 #### Scaling Triggers
 - Response time > 20 seconds

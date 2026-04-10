@@ -209,8 +209,8 @@ This project is licensed under the "Don't Use This In Production" license.
 
 This project solves exactly zero real-world problems. It's purely for entertainment and demonstrating the absurdity of over-engineering.
 
-Estimated cloud cost: $0/month (free tiers for open-source).
+Estimated cloud cost: depends on provider quotas, billing settings, and traffic.
 
-Was it worth it? Yes, and it's free!
+Was it worth it? Yes, but check the cloud bill first.
 
 But did we have fun? Yes.

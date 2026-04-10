@@ -47,7 +47,7 @@ The repository baseline expects:
 - no tracked `node_modules` or build artifacts
 - gateway hardening for CORS, request size limits, and security headers
 - optional API key enforcement for `/api/*` via `API_GATEWAY_API_KEY`
-- CI policy checks for tracked-file hygiene and secret-pattern detection
+- local and opt-in CI policy checks for tracked-file hygiene and secret-pattern detection
 
 ## Deployment Controls
 

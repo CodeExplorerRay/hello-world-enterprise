@@ -180,8 +180,8 @@ All architectural decisions are documented in `ARCHITECTURE_DECISION_RECORDS/`.
 - Rotate keys regularly
 
 ### Code Security
-- Repository policy checks run in CI to block tracked secrets, vendored dependencies, and build artifacts
-- API gateway helper smoke tests run in CI alongside syntax validation
+- Repository policy checks are available through `npm run compliance:check` and opt-in CI to block tracked secrets, vendored dependencies, and build artifacts
+- API gateway helper smoke tests run locally and in opt-in CI alongside syntax validation
 - Additional platform and dependency scanning should be enforced at the hosting or organization level before production release
 
 ## Performance Optimization
@@ -205,7 +205,7 @@ A: Because enterprise software requires complexity to be taken seriously.
 A: No. Simplicity is for amateurs.
 
 ### Q: What's the cloud cost?
-A: Currently targeted at $0/month on the Railway and Vercel free tiers.
+A: It depends on provider quotas, billing settings, traffic, and whether CI automation is enabled.
 
 ### Q: Is this production-ready?
 A: Absolutely not. This is for entertainment only.
