@@ -193,6 +193,7 @@ Displays the greeting with a loading animation showing all services.
 - **SLA Document**: [SLA.md](SLA.md) formalizes our deeply unserious uptime commitment.
 - **On-Call Runbook**: [docs/runbook.md](docs/runbook.md) explains what to do when "Hello World" fails at 3 AM.
 - **Compliance Baseline**: [docs/compliance-baseline.md](docs/compliance-baseline.md) defines the practical repository, app, container, and deployment controls.
+- **Platform Controls Checklist**: [docs/platform-controls-checklist.md](docs/platform-controls-checklist.md) captures the dashboard-side controls for billing, secrets, branch protection, and runtime access.
 - **Cloud Run Deployment Guide**: [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md) is kept as a legacy alternative if you want a GCP-based deployment path later.
 - **Vercel Frontend Deployment Guide**: [docs/vercel-frontend-deployment.md](docs/vercel-frontend-deployment.md) documents the frontend-only deployment path.
 - **CHANGELOG**: [CHANGELOG.md](CHANGELOG.md) records the historical consequences of greeting drift.

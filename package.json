@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "compliance:check": "node scripts/compliance-check.js",
+    "containers:build": "node scripts/verify-container-builds.js",
     "smoke:endpoints": "node scripts/smoke-test-endpoints.js",
     "smoke:stack": "node scripts/rebuild-and-smoke-test.js"
   }

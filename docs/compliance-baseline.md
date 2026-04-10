@@ -8,6 +8,7 @@ This repository implements a practical production-grade baseline for a small pub
 - `scripts/compliance-check.js` blocks tracked or unignored `.env`, `node_modules`, `.next`, and common secret patterns.
 - GitHub and GitLab validation jobs are opt-in/manual to avoid surprise CI billing, and they run syntax checks plus the repository compliance check when enabled.
 - `SECURITY.md` defines vulnerability reporting expectations and incident handling guidance.
+- `docs/platform-controls-checklist.md` tracks provider-side controls that must be verified outside the repo.
 
 ## Application Controls
 
@@ -22,6 +23,7 @@ This repository implements a practical production-grade baseline for a small pub
 - Docker build contexts exclude local dependencies, build outputs, and environment files.
 - Node images install dependencies from lockfiles with `npm ci`.
 - Service containers run as non-root users where supported by the base image.
+- `npm run containers:build` verifies all service Dockerfiles once Docker Desktop or the Docker daemon is available.
 
 ## Deployment Controls
 
@@ -36,3 +38,4 @@ This repository implements a practical production-grade baseline for a small pub
 - Protect production branches with reviews and required checks before merging when a billing-approved CI runner is available.
 - Keep deployment credentials out of local `.env` files whenever a managed secret store is available.
 - Capture incident records under `INCIDENT_REPORTS/` or the team incident tracker after material events.
+- Work through `docs/platform-controls-checklist.md` before enabling production traffic.
