@@ -182,8 +182,8 @@ Displays the greeting with a loading animation showing all services.
 | Frontend | React/Next.js | SSR for 2 words |
 | Database | Firestore | NoSQL for greeting words |
 | Cache | Redis | Caching AI vibes |
-| Infra | Railway + Vercel | Free-tier friendly backend and frontend hosting |
-| CI/CD | GitLab CI/CD | 400 minutes/month free |
+| Infra | Railway + Vercel | Backend and frontend hosting |
+| CI/CD | GitHub/GitLab validation plus platform deploys | Keep provider billing and minutes explicit before enabling automation |
 | Monitoring | Platform logs + smoke checks | Enough operational drama for two words |
 
 ### Extra Polish
@@ -192,6 +192,7 @@ Displays the greeting with a loading animation showing all services.
 - **Grafana Dashboard**: [monitoring/dashboard.json](monitoring/dashboard.json) includes panels for latency, AI confidence, teapot 418 counts, cost per greeting, and variant distribution.
 - **SLA Document**: [SLA.md](SLA.md) formalizes our deeply unserious uptime commitment.
 - **On-Call Runbook**: [docs/runbook.md](docs/runbook.md) explains what to do when "Hello World" fails at 3 AM.
+- **Compliance Baseline**: [docs/compliance-baseline.md](docs/compliance-baseline.md) defines the practical repository, app, container, and deployment controls.
 - **Cloud Run Deployment Guide**: [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md) is kept as a legacy alternative if you want a GCP-based deployment path later.
 - **Vercel Frontend Deployment Guide**: [docs/vercel-frontend-deployment.md](docs/vercel-frontend-deployment.md) documents the frontend-only deployment path.
 - **CHANGELOG**: [CHANGELOG.md](CHANGELOG.md) records the historical consequences of greeting drift.

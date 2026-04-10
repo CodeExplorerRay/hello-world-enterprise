@@ -38,6 +38,3 @@ yarn-error.log*
 *.tmp
 .cache/
 .gocache/
-
-# Docker
-.dockerignore

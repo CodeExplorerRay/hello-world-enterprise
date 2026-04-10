@@ -2,6 +2,7 @@
   "name": "hello-world-enterprise",
   "private": true,
   "scripts": {
+    "compliance:check": "node scripts/compliance-check.js",
     "smoke:endpoints": "node scripts/smoke-test-endpoints.js",
     "smoke:stack": "node scripts/rebuild-and-smoke-test.js"
   }

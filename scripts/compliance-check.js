@@ -52,6 +52,17 @@ for (const checkedFile of checkedFiles) {
 }
 
 for (const checkedFile of checkedFiles) {
+  if (path.basename(checkedFile) !== 'Dockerfile') {
+    continue;
+  }
+
+  const dockerignorePath = path.join(repoRoot, path.dirname(checkedFile), '.dockerignore');
+  if (!fs.existsSync(dockerignorePath)) {
+    violations.push(`${checkedFile}: Docker build contexts must include a .dockerignore file.`);
+  }
+}
+
+for (const checkedFile of checkedFiles) {
   const fullPath = path.join(repoRoot, checkedFile);
   if (!fs.existsSync(fullPath)) {
     continue;
