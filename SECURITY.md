@@ -1,54 +1,77 @@
-# Security Audit Report
+# Security Policy
 
-## Executive Summary
-This report documents a comprehensive security assessment of HelloWorld Enterprise, a platform that displays "Hello World" through nine microservices with a level of operational seriousness normally reserved for much larger problems. The system does not present a proportionate threat surface relative to its purpose, but it does provide an impressive number of places in which governance, configuration drift, or greeting-based confusion could occur.
+## Scope
 
-## Threat Model
-- External users attempting to coerce the platform into displaying an unauthorized greeting.
-- Malicious insiders changing punctuation policy without proper committee approval.
-- Service-to-service failures that could degrade the integrity of the final rendered greeting.
-- Overly confident stakeholders making production decisions from statistically meaningless experiments.
+This repository is intended to meet a normal production-grade engineering baseline for:
 
-## Vulnerability Findings
+- source control hygiene
+- secrets handling
+- authenticated production access
+- dependency and artifact hygiene
+- documented incident reporting
 
-### CVE-HELLO-001: Greeting Injection
-- Severity: 7.1 HIGH
-- Description: An attacker could theoretically influence the greeting word and replace "Hello" with an unauthorized alternative such as "Goodbye," causing user confusion and possible executive alarm.
+This is not a formal certification statement for SOC 2, ISO 27001, HIPAA, PCI DSS, or GDPR. Those programs require infrastructure, process, legal, and evidence reviews outside the repository itself.
 
-### CVE-HELLO-002: Punctuation Escalation
-- Severity: 5.4 MEDIUM
-- Description: Inadequate governance around "!" versus "." could allow emotionally elevated output without full board approval.
+## Supported Deployment Model
 
-### CVE-HELLO-003: Teapot Identity Drift
-- Severity: 8.0 HIGH
-- Description: If the teapot health endpoint ever returns 200, downstream systems may mistake principled refusal for ordinary availability.
+The supported internet-facing production model is:
 
-### CVE-HELLO-004: Casual Greeting Privilege Escalation
-- Severity: 6.8 MEDIUM
-- Description: A misconfigured feature flag could promote "Hi" or "Hey" into enterprise contexts where "Hello" is the sanctioned default.
+- `services/frontend` exposed to end users
+- `services/api-gateway` exposed to end users
+- downstream backend services reachable only through private networking or authenticated service-to-service calls
 
-### CVE-HELLO-005: Statistical Confidence Laundering
-- Severity: 4.9 MEDIUM
-- Description: Tiny sample sizes may be presented as meaningful evidence, increasing the likelihood of punctuation policy based on decorative analytics.
+Direct public exposure of internal backend services is not considered a hardened production deployment.
 
-### CVE-HELLO-006: Microservice Ceremony Amplification
-- Severity: 6.1 MEDIUM
-- Description: The sheer number of services expands the blast radius for a defect that could otherwise be handled with a string literal.
+## Reporting a Vulnerability
 
-### CVE-HELLO-007: AI Tone Drift
-- Severity: 7.6 HIGH
-- Description: Generative output could recommend a greeting outside approved governance boundaries if validation is not enforced.
+Please do not open public issues for suspected secrets exposure, authentication bypasses, or remotely exploitable vulnerabilities.
 
-### CVE-HELLO-008: Observability-Induced Overconfidence
-- Severity: 3.7 LOW
-- Description: Rich dashboards may create a false sense of maturity around a workload whose core responsibility remains alarmingly small.
+Report findings privately to the repository maintainers with:
 
-## Recommendations
-- Enforce approved greeting allowlists at the orchestration layer.
-- Preserve the teapot's 418 identity with explicit regression tests.
-- Treat A/B analysis as advisory until sample sizes become credible.
-- Limit governance-driven complexity where it does not materially protect greeting integrity.
-- Continue documenting risks so future maintainers understand which absurdities are intentional.
+- affected file or endpoint
+- reproduction steps
+- impact assessment
+- proposed mitigation if available
 
-## Conclusion
-HelloWorld Enterprise is not insecure because it says "Hello World." It is insecure in the far more interesting way that only an over-architected system can be: by transforming a trivial requirement into a distributed collection of plausible-but-ridiculous failure modes. With the recommended controls in place, the platform can continue to greet users with confidence, ceremony, and only moderate existential exposure.
+If the issue involves exposed credentials:
+
+1. rotate the credential immediately
+2. remove the credential from source control and CI logs
+3. document the rotation in the incident record
+
+## Repository Controls
+
+The repository baseline expects:
+
+- no tracked `.env` files
+- no tracked `node_modules` or build artifacts
+- gateway hardening for CORS, request size limits, and security headers
+- optional API key enforcement for `/api/*` via `API_GATEWAY_API_KEY`
+- CI policy checks for tracked-file hygiene and secret-pattern detection
+
+## Deployment Controls
+
+Production deployments should use:
+
+- environment-scoped secrets management
+- least-privilege service identities
+- authenticated service-to-service calls for private backend services
+- one public backend entry point
+- change-reviewed and reproducible container images
+
+## Incident Handling
+
+Severity guidelines:
+
+- Critical: remote code execution, auth bypass, credential exposure, public data exposure
+- High: public internal service exposure, missing authentication on sensitive paths, persistent secret leakage
+- Medium: documentation drift, missing hardening headers, weak container defaults
+- Low: policy gaps that do not directly expose systems
+
+For material incidents:
+
+1. contain exposure
+2. rotate affected credentials
+3. restore a safe deployment state
+4. capture root cause and remediation actions
+5. add or update automated checks to prevent recurrence

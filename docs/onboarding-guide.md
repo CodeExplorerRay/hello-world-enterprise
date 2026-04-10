@@ -180,9 +180,9 @@ All architectural decisions are documented in `ARCHITECTURE_DECISION_RECORDS/`.
 - Rotate keys regularly
 
 ### Code Security
-- All dependencies scanned weekly
-- SAST/DAST scans on every PR
-- Manual security review required
+- Repository policy checks run in CI to block tracked secrets, vendored dependencies, and build artifacts
+- API gateway helper smoke tests run in CI alongside syntax validation
+- Additional platform and dependency scanning should be enforced at the hosting or organization level before production release
 
 ## Performance Optimization
 

@@ -5,6 +5,8 @@ const AI_ANALYSIS_TIMEOUT_MS = 8000;
 const BASE_INFRA_COST_PER_GREETING = 0.0142;
 const COST_PER_AI_TOKEN = 0.000018;
 
+const { buildAuthorizedHeaders } = require('./service-auth');
+
 function stableBucket(seed = 'anonymous') {
   let hash = 0;
 
@@ -177,14 +179,16 @@ function buildUrlWithQuery(baseUrl, path, query) {
   return url.toString();
 }
 
-async function fetchJson(url, options = {}) {
+async function fetchJson(url, options = {}, env = process.env) {
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const requestHeaders = await buildAuthorizedHeaders(url, options.headers, env);
     const response = await fetch(url, {
       ...options,
+      headers: requestHeaders,
       signal: controller.signal,
     });
 
@@ -205,9 +209,9 @@ async function fetchJson(url, options = {}) {
   }
 }
 
-async function fetchJsonOrFallback(url, options, fallbackValue) {
+async function fetchJsonOrFallback(url, options, fallbackValue, env = process.env) {
   try {
-    return await fetchJson(url, options);
+    return await fetchJson(url, options, env);
   } catch (error) {
     return {
       ...fallbackValue,
@@ -246,6 +250,7 @@ async function orchestrateGreeting(payload, env = process.env) {
         rolloutPercentage: 0,
         value: 'Hello',
       },
+      env,
     ),
     fetchJsonOrFallback(
       buildUrlWithQuery(urls.featureFlagService, '/flags/ai-greeting-enabled', context),
@@ -258,6 +263,7 @@ async function orchestrateGreeting(payload, env = process.env) {
         rolloutPercentage: 0,
         value: false,
       },
+      env,
     ),
     fetchJsonOrFallback(
       buildUrlWithQuery(urls.abTestingService, '/test/punctuation-style', {
@@ -275,6 +281,7 @@ async function orchestrateGreeting(payload, env = process.env) {
         variant: stableBucket(`${context.userId}:punctuation`) < 50 ? 'A' : 'B',
         variantDescription: 'Gateway fallback punctuation.',
       },
+      env,
     ),
     fetchJsonOrFallback(
       buildUrlWithQuery(urls.teapotService, '/health', {}),
@@ -284,6 +291,7 @@ async function orchestrateGreeting(payload, env = process.env) {
         message: 'Teapot health check unavailable, but the gateway still believes in teapots.',
         status: "I'm a teapot",
       },
+      env,
     ),
   ]);
 
@@ -301,6 +309,7 @@ async function orchestrateGreeting(payload, env = process.env) {
         reasoning: 'AI service unavailable. Falling back to feature flag greeting.',
         tokensUsed: 0,
       },
+      env,
     );
   }
 
@@ -318,6 +327,7 @@ async function orchestrateGreeting(payload, env = process.env) {
       original: greetingDecision.word,
       wasSpringBootOverkill: true,
     },
+    env,
   );
 
   const joinedText = `${capitalizedGreeting.capitalized || capitalizeWord(greetingDecision.word)} ${context.recipient}`;
@@ -333,6 +343,7 @@ async function orchestrateGreeting(payload, env = process.env) {
       Note: 'Concatenation service unavailable. Falling back to string interpolation.',
       Result: joinedText,
     },
+    env,
   );
 
   const punctuated = await fetchJsonOrFallback(
@@ -351,6 +362,7 @@ async function orchestrateGreeting(payload, env = process.env) {
       punctuated: `${concatenated.result || concatenated.Result || joinedText}${experiment.punctuation || '!'}`,
       punctuation_applied: experiment.punctuation || '!',
     },
+    env,
   );
 
   const aprilFoolsActive = isAprilFoolsDay();
@@ -404,6 +416,7 @@ async function orchestrateGreeting(payload, env = process.env) {
           isSignificant: false,
         },
       },
+      env,
     ),
     fetchJsonOrFallback(
       buildUrlWithQuery(urls.aiDecisionEngine, '/status-narrative', {}),
@@ -421,6 +434,7 @@ async function orchestrateGreeting(payload, env = process.env) {
         teapotWisdom: 'Even missing poetry can still be HTTP 418 compliant.',
         questStatus: 'Hello World remains achievable.',
       },
+      env,
     ),
   ]);
 

@@ -4,6 +4,8 @@ This document is a legacy alternative deployment path. The actively maintained p
 
 Use this guide only if you intentionally want a Google Cloud Run deployment instead of the default Railway-based setup.
 
+For a hardened Cloud Run deployment, only the `api-gateway` should remain publicly reachable. Downstream backend services should require authenticated service-to-service access, which this repo supports through `GCP_SERVICE_TO_SERVICE_AUTH=true` on the gateway.
+
 ## Target architecture
 
 - `services/frontend` -> Vercel
@@ -103,7 +105,7 @@ export GEMINI_API_KEY=your_real_key_here
 AI_DECISION_ENGINE_URL=$(gcloud run deploy ai-decision-engine \
   --source services/ai-decision-engine \
   --region "$REGION" \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8081 \
   --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
   --format='value(status.url)')
@@ -113,7 +115,7 @@ AI_DECISION_ENGINE_URL=$(gcloud run deploy ai-decision-engine \
 TEAPOT_SERVICE_URL=$(gcloud run deploy teapot-service \
   --source services/teapot-service \
   --region "$REGION" \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8082 \
   --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
   --format='value(status.url)')
@@ -123,7 +125,7 @@ TEAPOT_SERVICE_URL=$(gcloud run deploy teapot-service \
 PUNCTUATION_SERVICE_URL=$(gcloud run deploy punctuation-service \
   --source services/punctuation-service \
   --region "$REGION" \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8083 \
   --format='value(status.url)')
 ```
@@ -132,7 +134,7 @@ PUNCTUATION_SERVICE_URL=$(gcloud run deploy punctuation-service \
 FEATURE_FLAG_SERVICE_URL=$(gcloud run deploy feature-flag-service \
   --source services/feature-flag-service \
   --region "$REGION" \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8084 \
   --format='value(status.url)')
 ```
@@ -141,7 +143,7 @@ FEATURE_FLAG_SERVICE_URL=$(gcloud run deploy feature-flag-service \
 AB_TESTING_SERVICE_URL=$(gcloud run deploy ab-testing-service \
   --source services/ab-testing-service \
   --region "$REGION" \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8085 \
   --format='value(status.url)')
 ```
@@ -150,7 +152,7 @@ AB_TESTING_SERVICE_URL=$(gcloud run deploy ab-testing-service \
 CONCATENATION_SERVICE_URL=$(gcloud run deploy concatenation-service \
   --source services/concatenation-service \
   --region "$REGION" \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8086 \
   --format='value(status.url)')
 ```
@@ -159,7 +161,7 @@ CONCATENATION_SERVICE_URL=$(gcloud run deploy concatenation-service \
 CAPITALIZATION_SERVICE_URL=$(gcloud run deploy capitalization-service \
   --source services/capitalization-service \
   --region "$REGION" \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8087 \
   --format='value(status.url)')
 ```
@@ -172,7 +174,7 @@ API_GATEWAY_URL=$(gcloud run deploy api-gateway \
   --region "$REGION" \
   --allow-unauthenticated \
   --port 8080 \
-  --set-env-vars "AI_DECISION_ENGINE_URL=${AI_DECISION_ENGINE_URL},TEAPOT_SERVICE_URL=${TEAPOT_SERVICE_URL},PUNCTUATION_SERVICE_URL=${PUNCTUATION_SERVICE_URL},FEATURE_FLAG_SERVICE_URL=${FEATURE_FLAG_SERVICE_URL},AB_TESTING_SERVICE_URL=${AB_TESTING_SERVICE_URL},CONCATENATION_SERVICE_URL=${CONCATENATION_SERVICE_URL},CAPITALIZATION_SERVICE_URL=${CAPITALIZATION_SERVICE_URL}" \
+  --set-env-vars "AI_DECISION_ENGINE_URL=${AI_DECISION_ENGINE_URL},TEAPOT_SERVICE_URL=${TEAPOT_SERVICE_URL},PUNCTUATION_SERVICE_URL=${PUNCTUATION_SERVICE_URL},FEATURE_FLAG_SERVICE_URL=${FEATURE_FLAG_SERVICE_URL},AB_TESTING_SERVICE_URL=${AB_TESTING_SERVICE_URL},CONCATENATION_SERVICE_URL=${CONCATENATION_SERVICE_URL},CAPITALIZATION_SERVICE_URL=${CAPITALIZATION_SERVICE_URL},GCP_SERVICE_TO_SERVICE_AUTH=true" \
   --format='value(status.url)')
 ```
 
@@ -180,8 +182,10 @@ API_GATEWAY_URL=$(gcloud run deploy api-gateway \
 
 ```bash
 curl -fsS "${API_GATEWAY_URL}/health"
-curl -fsS "${AI_DECISION_ENGINE_URL}/health"
-curl -fsS "${PUNCTUATION_SERVICE_URL}/health"
+curl -fsS -H "Authorization: Bearer $(gcloud auth print-identity-token --audiences="${AI_DECISION_ENGINE_URL}")" \
+  "${AI_DECISION_ENGINE_URL}/health"
+curl -fsS -H "Authorization: Bearer $(gcloud auth print-identity-token --audiences="${PUNCTUATION_SERVICE_URL}")" \
+  "${PUNCTUATION_SERVICE_URL}/health"
 curl -fsS -H "Content-Type: application/json" \
   -d '{"recipient":"World","channel":"web","locale":"en-US","preferredGreeting":"auto"}' \
   "${API_GATEWAY_URL}/api/greet"

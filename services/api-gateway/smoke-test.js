@@ -13,6 +13,11 @@ const {
   isOriginAllowed,
   resolveAllowedOrigins,
 } = require('./security-config');
+const {
+  decodeJwtExpiry,
+  isServiceToServiceAuthEnabled,
+  shouldAttachServiceAuth,
+} = require('./service-auth');
 
 const request = normalizeGreetRequest({});
 assert.equal(request.recipient, 'World');
@@ -49,6 +54,15 @@ assert.equal(isApiKeyProtectionEnabled({}), false);
 assert.equal(isApiKeyProtectionEnabled({ API_GATEWAY_API_KEY: 'top-secret' }), true);
 assert.equal(isApiKeyAuthorized('top-secret', { API_GATEWAY_API_KEY: 'top-secret' }), true);
 assert.equal(isApiKeyAuthorized('wrong-secret', { API_GATEWAY_API_KEY: 'top-secret' }), false);
+
+assert.equal(isServiceToServiceAuthEnabled({}), false);
+assert.equal(isServiceToServiceAuthEnabled({ GCP_SERVICE_TO_SERVICE_AUTH: 'true' }), true);
+assert.equal(shouldAttachServiceAuth('https://service.example.com', { GCP_SERVICE_TO_SERVICE_AUTH: 'true' }), true);
+assert.equal(shouldAttachServiceAuth('http://localhost:8081', { GCP_SERVICE_TO_SERVICE_AUTH: 'true' }), false);
+assert.equal(
+  decodeJwtExpiry('eyJhbGciOiJub25lIn0.eyJleHAiOjIwMDAwMDAwMDB9.signature'),
+  2000000000 * 1000,
+);
 
 const corsOptions = buildCorsOptions({
   API_GATEWAY_ALLOWED_ORIGINS: 'https://app.example.com',

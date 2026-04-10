@@ -54,7 +54,7 @@ steps:
           --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/ai-decision-engine:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
-          --allow-unauthenticated \
+          --no-allow-unauthenticated \
           --port 8081 \
           --set-env-vars "GEMINI_API_KEY=${_GEMINI_API_KEY}" \
           --quiet \
@@ -64,7 +64,7 @@ steps:
           --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/teapot-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
-          --allow-unauthenticated \
+          --no-allow-unauthenticated \
           --port 8082 \
           --set-env-vars "GEMINI_API_KEY=${_GEMINI_API_KEY}" \
           --quiet \
@@ -74,7 +74,7 @@ steps:
           --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/punctuation-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
-          --allow-unauthenticated \
+          --no-allow-unauthenticated \
           --port 8083 \
           --quiet \
           --format='value(status.url)')"
@@ -83,7 +83,7 @@ steps:
           --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/feature-flag-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
-          --allow-unauthenticated \
+          --no-allow-unauthenticated \
           --port 8084 \
           --quiet \
           --format='value(status.url)')"
@@ -92,7 +92,7 @@ steps:
           --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/ab-testing-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
-          --allow-unauthenticated \
+          --no-allow-unauthenticated \
           --port 8085 \
           --quiet \
           --format='value(status.url)')"
@@ -101,7 +101,7 @@ steps:
           --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/concatenation-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
-          --allow-unauthenticated \
+          --no-allow-unauthenticated \
           --port 8086 \
           --quiet \
           --format='value(status.url)')"
@@ -110,7 +110,7 @@ steps:
           --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/capitalization-service:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
-          --allow-unauthenticated \
+          --no-allow-unauthenticated \
           --port 8087 \
           --quiet \
           --format='value(status.url)')"
@@ -121,7 +121,7 @@ steps:
           --region "${_REGION}" \
           --allow-unauthenticated \
           --port 8080 \
-          --set-env-vars "AI_DECISION_ENGINE_URL=$$AI_URL,TEAPOT_SERVICE_URL=$$TEAPOT_URL,PUNCTUATION_SERVICE_URL=$$PUNCTUATION_URL,FEATURE_FLAG_SERVICE_URL=$$FEATURE_FLAG_URL,AB_TESTING_SERVICE_URL=$$AB_TESTING_URL,CONCATENATION_SERVICE_URL=$$CONCATENATION_URL,CAPITALIZATION_SERVICE_URL=$$CAPITALIZATION_URL" \
+          --set-env-vars "AI_DECISION_ENGINE_URL=$$AI_URL,TEAPOT_SERVICE_URL=$$TEAPOT_URL,PUNCTUATION_SERVICE_URL=$$PUNCTUATION_URL,FEATURE_FLAG_SERVICE_URL=$$FEATURE_FLAG_URL,AB_TESTING_SERVICE_URL=$$AB_TESTING_URL,CONCATENATION_SERVICE_URL=$$CONCATENATION_URL,CAPITALIZATION_SERVICE_URL=$$CAPITALIZATION_URL,GCP_SERVICE_TO_SERVICE_AUTH=true" \
           --quiet \
           --format='value(status.url)')"
 
@@ -147,9 +147,13 @@ steps:
         set -euo pipefail
         source /workspace/.cloud-run/urls.env
 
+        mint_identity_token() {
+          gcloud auth print-identity-token --audiences="$1"
+        }
+
         curl -fsS "$$API_GATEWAY_URL/health"
-        curl -fsS "$$AI_DECISION_ENGINE_URL/health"
-        curl -fsS "$$PUNCTUATION_SERVICE_URL/health"
+        curl -fsS -H "Authorization: Bearer $(mint_identity_token "$$AI_DECISION_ENGINE_URL")" "$$AI_DECISION_ENGINE_URL/health"
+        curl -fsS -H "Authorization: Bearer $(mint_identity_token "$$PUNCTUATION_SERVICE_URL")" "$$PUNCTUATION_SERVICE_URL/health"
 
         response="$(curl -fsS \
           -H "Content-Type: application/json" \

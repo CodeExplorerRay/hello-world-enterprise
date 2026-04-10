@@ -7,7 +7,7 @@ ENV API_GATEWAY_ORIGIN=$API_GATEWAY_ORIGIN
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
@@ -22,12 +22,16 @@ ENV API_GATEWAY_ORIGIN=$API_GATEWAY_ORIGIN
 
 COPY --from=builder /app/package*.json ./
 
-RUN npm install --only=production
+RUN npm ci --omit=dev
 
 COPY --from=builder /app/.next ./.next
 
 COPY --from=builder /app/public ./public
 
+RUN addgroup -S nextjs && adduser -S -G nextjs nextjs && chown -R nextjs:nextjs /app
+
 EXPOSE 3000
+
+USER nextjs
 
 CMD ["npm", "start"]

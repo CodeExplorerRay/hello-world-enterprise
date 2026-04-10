@@ -10,6 +10,10 @@ COPY . .
 
 RUN go build -o main .
 
+RUN addgroup -S app && adduser -S -G app app && chown -R app:app /app
+
 EXPOSE 8082
+
+USER app
 
 CMD ["./main"]

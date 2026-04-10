@@ -11,6 +11,10 @@ COPY . .
 # Build the application
 RUN cargo build --release
 
+RUN groupadd -r app && useradd -r -g app app && chown -R app:app /app
+
 EXPOSE 8083
+
+USER app
 
 CMD ["./target/release/punctuation-service"]

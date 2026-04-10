@@ -23,5 +23,8 @@ jobs:
     - name: Validate rebuild-and-smoke-test syntax
       run: node --check scripts/rebuild-and-smoke-test.js
 
+    - name: Run repository compliance policy check
+      run: node scripts/compliance-check.js
+
     - name: Run API gateway helper smoke test
       run: node services/api-gateway/smoke-test.js
